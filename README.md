@@ -1,8 +1,6 @@
 # Home Assistant ČEZ Distribuce Portál Naměřených Dat
 
-:exclamation::exclamation::exclamation:
-** 1.10.2025 se změnila struktura přihlašování do PND ** aktualizovaná verze 0.9.9.7 je aktualizovaná s ohledem na tyto změny
-:exclamation::exclamation::exclamation:
+:exclamation::exclamation::exclamation: ** 1.10.2025 se změnila struktura přihlašování do PND ** aktualizovaná verze 0.9.9.7 je aktualizovaná s ohledem na tyto změny :exclamation::exclamation::exclamation:
 
  **Stávající uživatelé pozor**, 16.4.2024 byla vydána nová verze modulu Numpy, která není kompatibilní s aktuální verzí AppDaemon (resp Pandas). Do nastavení AppDaemon je nutné přidat modul `numpy==1.26.4` viz zde: https://github.com/ondrejvysek/HomeAssistant-CEZDistribuce-PND/issues/42#issuecomment-2174487719. Problém se projeví po restartu AppDaemon, tj např při aktualizaci HA. Pro nové instalace je dokumentace aktualizovaná
 
