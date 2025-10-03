@@ -1,4 +1,4 @@
-ver = "0.9.9.5"
+ver = "0.9.9.7"
 import appdaemon.plugins.hass.hassapi as hass
 import time
 import datetime
@@ -190,7 +190,10 @@ class pnd(hass.Hass):
     # Open a website
     driver.set_window_size(1920, 1080)
     try:
-      driver.get("https://dip.cezdistribuce.cz/irj/portal/?zpnd=")  # Change to the website's login page
+      #driver.get("https://dip.cezdistribuce.cz/irj/portal/?zpnd=")  # Change to the website's login page
+      PNDURL = "https://pnd.cezdistribuce.cz/cezpnd2/external/dashboard/view"
+      print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": Opening Website:", PNDURL)
+      driver.get(PNDURL)  # Change to the website's login page
       print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": Website Opened")
     except:
       print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: Unable to open website - exitting{Colors.RESET}")
@@ -201,6 +204,7 @@ class pnd(hass.Hass):
       })
       raise Exception("Unable to open website - exitting")
     time.sleep(3)  # Allow time for the page to load
+    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": Current URL:", driver.current_url)
     try:
         # Locate the element that might be blocking the login button
         cookie_banner_close_button = driver.find_element(By.ID, "CybotCookiebotDialogBodyLevelButtonLevelOptinAllowallSelection")
@@ -208,24 +212,29 @@ class pnd(hass.Hass):
         cookie_banner_close_button.click()
     except:
         print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + "No cookie banner found")
-        self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-        self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
-            "status": "ERROR: Nepodařilo se nalézt cookie banner, zkuste za chvíli znovu spustit skript.",
-            "friendly_name": "PND Script Status"
-        })
-        raise Exception("Unable to open website - exitting")
+        #self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
+        #self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
+        #    "status": "ERROR: Nepodařilo se nalézt cookie banner, zkuste za chvíli znovu spustit skript.",
+        #    "friendly_name": "PND Script Status"
+        #})
+        #raise Exception("Unable to open website - exitting")
     time.sleep(1)  # Allow time for the page to load
     # Simulate login
     try:
-        username_field = driver.find_element(By.XPATH, "//input[@placeholder='Uživatelské jméno / e-mail']")
-        password_field = driver.find_element(By.XPATH, "//input[@placeholder='Heslo']")
-        login_button = driver.find_element(By.XPATH, "//button[@type='submit' and @color='primary']")
+        #username_field = driver.find_element(By.XPATH, "//input[@placeholder='Uživatelské jméno / e-mail']")
+        username_field = driver.find_element(By.XPATH, "//input[@placeholder='Zadejte svůj e-mail']")
+        #password_field = driver.find_element(By.XPATH, "//input[@placeholder='Heslo']")
+        password_field = driver.find_element(By.XPATH, "//input[@placeholder='Zadejte své heslo']")
+        #login_button = driver.find_element(By.XPATH, "//button[@type='submit' and @color='primary']")
+        login_button = driver.find_element(By.XPATH, "//button[@type='submit' and contains(@class, 'mui-btn--primary')]")
         # Enter login credentials and click the button
         username_field.send_keys(self.username)
         password_field.send_keys(self.password)
         # Wait until the login button is clickable
         wait = WebDriverWait(driver, 10)  # 10-second timeout
-        login_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@type='submit' and @color='primary']")))
+        #login_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@type='submit' and @color='primary']")))
+        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": Login button found, clicking it")
+        login_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@type='submit' and contains(@class, 'mui-btn--primary')]")))
         body = driver.find_element(By.TAG_NAME, 'body')
         body.screenshot(self.download_folder+"/00.png")
         login_button.click()
@@ -239,7 +248,7 @@ class pnd(hass.Hass):
         raise Exception("Failed to find or click the login button")
     # Allow time for login processing
     time.sleep(5)  # Adjust as needed
-
+    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": Current URL:", driver.current_url)
     wait = WebDriverWait(driver, 20)  # 10-second timeout
     body = driver.find_element(By.TAG_NAME, 'body')
     # Check if the specified H1 tag is present
