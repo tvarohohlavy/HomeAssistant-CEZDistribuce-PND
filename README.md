@@ -1,6 +1,8 @@
 # Home Assistant ČEZ Distribuce Portál Naměřených Dat
 
-:exclamation::exclamation::exclamation: **Stávající uživatelé pozor**, 16.4.2024 byla vydána nová verze modulu Numpy, která není kompatibilní s aktuální verzí AppDaemon (resp Pandas). Do nastavení AppDaemon je nutné přidat modul `numpy==1.26.4` viz zde: https://github.com/ondrejvysek/HomeAssistant-CEZDistribuce-PND/issues/42#issuecomment-2174487719. Problém se projeví po restartu AppDaemon, tj např při aktualizaci HA. Pro nové instalace je dokumentace aktualizovaná :exclamation::exclamation::exclamation:
+:exclamation::exclamation::exclamation: **1.10.2025 se změnila struktura přihlašování do PND** aktualizovaná verze 0.9.9.7 je aktualizovaná s ohledem na tyto změny :exclamation::exclamation::exclamation:
+
+ **Stávající uživatelé pozor**, 16.4.2024 byla vydána nová verze modulu Numpy, která není kompatibilní s aktuální verzí AppDaemon (resp Pandas). Do nastavení AppDaemon je nutné přidat modul `numpy==1.26.4` viz zde: https://github.com/ondrejvysek/HomeAssistant-CEZDistribuce-PND/issues/42#issuecomment-2174487719. Problém se projeví po restartu AppDaemon, tj např při aktualizaci HA. Pro nové instalace je dokumentace aktualizovaná
 
 Script a nastavení Home Assistant slouží pro vyčítání dat o spotřebě a výrobě elektřiny z distribučního portálu https://www.cezdistribuce.cz/ v denních úhrnech
 
@@ -448,6 +450,11 @@ Pokud máte nějaké přání, nápad na vylepšení - vytvořte požadavek zde 
 - [ ] Distribuce a aktualizace přes HACS
       
 # Změny
+
+## 3.10.2025 - 0.9.9.7
+ - [x] Oprava způsobu přihlašování [#79](https://github.com/ondrejvysek/HomeAssistant-CEZDistribuce-PND/issues/79)
+
+## 2.10.2025 - 0.9.9.6 - Interní test verze
 
 ## 2.2.2025 - 0.9.9.3
 - [x] Oprava časů v datech, aby seděly datumy [#61](https://github.com/ondrejvysek/HomeAssistant-CEZDistribuce-PND/pull/61), +omezení velikosti dat [#60](https://github.com/ondrejvysek/HomeAssistant-CEZDistribuce-PND/issues/60) díky @waclaw66

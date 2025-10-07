@@ -1,4 +1,4 @@
-ver = "0.9.9.4"
+ver = "0.9.9.7"
 import appdaemon.plugins.hass.hassapi as hass
 import time
 import datetime
@@ -114,6 +114,17 @@ def conv_date(s):
     s = s.replace("24:00:00", "23:59:00")
     return datetime.datetime.strptime(s, "%d.%m.%Y %H:%M:%S")
 
+def _normalize_ha_state(value):
+    if value is None:
+        return "unknown"
+    if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+        return "unknown"
+    if isinstance(value, datetime.timedelta):
+        value = str(value)
+    s = str(value)
+    s = " ".join(s.replace("\xa0", " ").split())
+    return s[:255]  # HA hard limit
+
 class pnd(hass.Hass):
   def initialize(self):
     print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": >>>>>>>>>>>> PND Initialize")
@@ -134,6 +145,9 @@ class pnd(hass.Hass):
 
   def terminate(self):
     print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": >>>>>>>>>>>> PND Terminate")
+
+  def set_state_safe(self, entity_id, state, attributes=None):
+      return self.set_state(entity_id, state=_normalize_ha_state(state), attributes=attributes or {})
 
   def run_pnd(self, event_name, data, kwargs):
     script_start_time = dt.now()
@@ -176,7 +190,10 @@ class pnd(hass.Hass):
     # Open a website
     driver.set_window_size(1920, 1080)
     try:
-      driver.get("https://dip.cezdistribuce.cz/irj/portal/?zpnd=")  # Change to the website's login page
+      #driver.get("https://dip.cezdistribuce.cz/irj/portal/?zpnd=")  # Change to the website's login page
+      PNDURL = "https://pnd.cezdistribuce.cz/cezpnd2/external/dashboard/view"
+      print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": Opening Website:", PNDURL)
+      driver.get(PNDURL)  # Change to the website's login page
       print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": Website Opened")
     except:
       print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: Unable to open website - exitting{Colors.RESET}")
@@ -187,6 +204,7 @@ class pnd(hass.Hass):
       })
       raise Exception("Unable to open website - exitting")
     time.sleep(3)  # Allow time for the page to load
+    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": Current URL:", driver.current_url)
     try:
         # Locate the element that might be blocking the login button
         cookie_banner_close_button = driver.find_element(By.ID, "CybotCookiebotDialogBodyLevelButtonLevelOptinAllowallSelection")
@@ -194,24 +212,29 @@ class pnd(hass.Hass):
         cookie_banner_close_button.click()
     except:
         print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + "No cookie banner found")
-        self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-        self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
-            "status": "ERROR: Nepodařilo se nalézt cookie banner, zkuste za chvíli znovu spustit skript.",
-            "friendly_name": "PND Script Status"
-        })
-        raise Exception("Unable to open website - exitting")
+        #self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
+        #self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
+        #    "status": "ERROR: Nepodařilo se nalézt cookie banner, zkuste za chvíli znovu spustit skript.",
+        #    "friendly_name": "PND Script Status"
+        #})
+        #raise Exception("Unable to open website - exitting")
     time.sleep(1)  # Allow time for the page to load
     # Simulate login
     try:
-        username_field = driver.find_element(By.XPATH, "//input[@placeholder='Uživatelské jméno / e-mail']")
-        password_field = driver.find_element(By.XPATH, "//input[@placeholder='Heslo']")
-        login_button = driver.find_element(By.XPATH, "//button[@type='submit' and @color='primary']")
+        #username_field = driver.find_element(By.XPATH, "//input[@placeholder='Uživatelské jméno / e-mail']")
+        username_field = driver.find_element(By.XPATH, "//input[@placeholder='Zadejte svůj e-mail']")
+        #password_field = driver.find_element(By.XPATH, "//input[@placeholder='Heslo']")
+        password_field = driver.find_element(By.XPATH, "//input[@placeholder='Zadejte své heslo']")
+        #login_button = driver.find_element(By.XPATH, "//button[@type='submit' and @color='primary']")
+        login_button = driver.find_element(By.XPATH, "//button[@type='submit' and contains(@class, 'mui-btn--primary')]")
         # Enter login credentials and click the button
         username_field.send_keys(self.username)
         password_field.send_keys(self.password)
         # Wait until the login button is clickable
         wait = WebDriverWait(driver, 10)  # 10-second timeout
-        login_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@type='submit' and @color='primary']")))
+        #login_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@type='submit' and @color='primary']")))
+        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": Login button found, clicking it")
+        login_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@type='submit' and contains(@class, 'mui-btn--primary')]")))
         body = driver.find_element(By.TAG_NAME, 'body')
         body.screenshot(self.download_folder+"/00.png")
         login_button.click()
@@ -225,7 +248,7 @@ class pnd(hass.Hass):
         raise Exception("Failed to find or click the login button")
     # Allow time for login processing
     time.sleep(5)  # Adjust as needed
-
+    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": Current URL:", driver.current_url)
     wait = WebDriverWait(driver, 20)  # 10-second timeout
     body = driver.find_element(By.TAG_NAME, 'body')
     # Check if the specified H1 tag is present
@@ -276,10 +299,12 @@ class pnd(hass.Hass):
     time.sleep(2)  # Allow time for the page to load
     # Get the app version
     version_element = driver.find_element(By.XPATH, "//div[contains(text(), 'Verze aplikace:')]")
-    version_text = version_element.text
-    version_number = version_text.split(':')[1].strip()
-    self.set_state(f"sensor.pnd_app_version{self.suffix}", state=version_number, attributes={
-      "friendly_name": "PND App Version",
+    version_text = (version_element.get_attribute("textContent") or version_element.text or "").replace("\xa0", " ")
+    parts = version_text.split(":", 1)
+    version_number = parts[1].strip() if len(parts) > 1 else version_text.strip()
+    version_number = str(version_number).strip() or "unknown"
+    self.set_state_safe(f"sensor.pnd_app_version{self.suffix}", state=version_number, attributes={
+        "friendly_name": "PND App Version",
     })
     print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"App Version: {version_number}")
 
@@ -795,10 +820,9 @@ class pnd(hass.Hass):
     else:
         print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}No file was downloaded.{Colors.RESET}")
     print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + "All Done - INTERVAL DATA DOWNLOADED")
-    data_consumption = pd.read_csv(self.download_folder + '/range-consumption.csv', delimiter=';', encoding='latin1', parse_dates=[0],dayfirst=True)
-    data_production = pd.read_csv(self.download_folder + '/range-production.csv', delimiter=';', encoding='latin1', parse_dates=[0],dayfirst=True)
+    data_consumption = pd.read_csv(self.download_folder + '/range-consumption.csv', delimiter=';', encoding='latin1', converters={0: lambda s: dt.strptime(s.replace("24:00:00","23:59:00"), "%d.%m.%Y %H:%M:%S")})
+    data_production = pd.read_csv(self.download_folder + '/range-production.csv', delimiter=';', encoding='latin1', converters={0: lambda s: dt.strptime(s.replace("24:00:00","23:59:00"), "%d.%m.%Y %H:%M:%S")})
 
-    data_consumption.iloc[:, 0] = data_consumption.iloc[:, 0].apply(lambda dt: conv_date(dt))
     date_str = [dt.date().isoformat() for dt in data_consumption.iloc[:, 0]]
 
     consumption_str = data_consumption.iloc[:, 1].to_list()
