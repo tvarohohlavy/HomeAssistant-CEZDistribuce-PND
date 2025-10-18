@@ -22,14 +22,23 @@ from bs4 import BeautifulSoup
 import platform
 import subprocess
 
+def get_timestamp():
+    return dt.now().strftime("%Y-%m-%d %H:%M:%S")
+
+def log(message):
+    print(f"{get_timestamp()}: {message}")
+
 def print_system_info():
-    print("System Information:")
-    print(f"Platform: {platform.system()}")
-    print(f"Platform Release: {platform.release()}")
-    print(f"Platform Version: {platform.version()}")
-    print(f"Architecture: {platform.machine()}")
-    print(f"Processor: {platform.processor()}")
-    print(f"Python Version: {platform.python_version()}")
+    print(f"""
+    System Information:
+    ===================
+    Platform: {platform.system()}
+    Platform Release: {platform.release()}
+    Platform Version: {platform.version()}
+    Architecture: {platform.machine()}
+    Processor: {platform.processor()}
+    Python Version: {platform.python_version()}
+    """)
 
 def print_installed_modules():
     print("\nInstalled Python Modules:")
@@ -127,7 +136,7 @@ def _normalize_ha_state(value):
 
 class pnd(hass.Hass):
   def initialize(self):
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": >>>>>>>>>>>> PND Initialize")
+    log(">>>>>>>>>>>> PND Initialize")
     print_system_info()
     print_installed_modules()
     get_chromedriver_version()
@@ -144,21 +153,21 @@ class pnd(hass.Hass):
     self.listen_event(self.run_pnd, "run_pnd")
 
   def terminate(self):
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": >>>>>>>>>>>> PND Terminate")
+    log(">>>>>>>>>>>> PND Terminate")
 
   def set_state_safe(self, entity_id, state, attributes=None):
       return self.set_state(entity_id, state=_normalize_ha_state(state), attributes=attributes or {})
 
   def run_pnd(self, event_name, data, kwargs):
     script_start_time = dt.now()
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + f": {Colors.CYAN}********************* Starting " +  ver + f" *********************{Colors.RESET}")
+    log(f"{Colors.CYAN}********************* Starting " +  ver + f" *********************{Colors.RESET}")
     self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="on")
     self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Running",attributes={
       "status": "OK",
       "friendly_name": "PND Script Status"
     })
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": ----------------------------------------------")
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": Hello from AppDaemon for Portal Namerenych Dat")
+    log("----------------------------------------------")
+    log("Hello from AppDaemon for Portal Namerenych Dat")
     delete_folder_contents(self.download_folder+"/")
     os.makedirs(self.download_folder, exist_ok=True)
     chrome_options = Options()
@@ -178,9 +187,9 @@ class pnd(hass.Hass):
     #load driver
     try:
       driver = webdriver.Chrome(service=service, options=chrome_options)
-      print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": Driver Loaded")
+      log("Driver Loaded")
     except:
-      print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: Unable to initialize Chrome Driver - exitting{Colors.RESET}")
+      log(f"{Colors.RED}ERROR: Unable to initialize Chrome Driver - exitting{Colors.RESET}")
       self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
       self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error",attributes={
         "status": "ERROR: Nepodařilo se inicializovat Chrome Driver, zkontroluj nastavení AppDaemon",
@@ -192,11 +201,11 @@ class pnd(hass.Hass):
     try:
       #driver.get("https://dip.cezdistribuce.cz/irj/portal/?zpnd=")  # Change to the website's login page
       PNDURL = "https://pnd.cezdistribuce.cz/cezpnd2/external/dashboard/view"
-      print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": Opening Website:", PNDURL)
+      log("Opening Website:", PNDURL)
       driver.get(PNDURL)  # Change to the website's login page
-      print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": Website Opened")
+      log("Website Opened")
     except:
-      print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: Unable to open website - exitting{Colors.RESET}")
+      log(f"{Colors.RED}ERROR: Unable to open website - exitting{Colors.RESET}")
       self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
       self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
         "status": "ERROR: Nepodařilo se otevřít webovou stránku PND portálu",
@@ -204,14 +213,14 @@ class pnd(hass.Hass):
       })
       raise Exception("Unable to open website - exitting")
     time.sleep(3)  # Allow time for the page to load
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": Current URL:", driver.current_url)
+    log("Current URL:", driver.current_url)
     try:
         # Locate the element that might be blocking the login button
         cookie_banner_close_button = driver.find_element(By.ID, "CybotCookiebotDialogBodyLevelButtonLevelOptinAllowallSelection")
         # Click the close button or take other action to dismiss the cookie banner
         cookie_banner_close_button.click()
     except:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + "No cookie banner found")
+        log("No cookie banner found")
         #self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
         #self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
         #    "status": "ERROR: Nepodařilo se nalézt cookie banner, zkuste za chvíli znovu spustit skript.",
@@ -233,13 +242,13 @@ class pnd(hass.Hass):
         # Wait until the login button is clickable
         wait = WebDriverWait(driver, 10)  # 10-second timeout
         #login_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@type='submit' and @color='primary']")))
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": Login button found, clicking it")
+        log("Login button found, clicking it")
         login_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@type='submit' and contains(@class, 'mui-btn--primary')]")))
         body = driver.find_element(By.TAG_NAME, 'body')
         body.screenshot(self.download_folder+"/00.png")
         login_button.click()
     except:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: Failed to enter login details or find and click the login button{Colors.RESET}")
+        log(f"{Colors.RED}ERROR: Failed to enter login details or find and click the login button{Colors.RESET}")
         self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
         self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
             "status": "ERROR: Nepodařilo se vyplnit přihlašovací údaje nebo najít a kliknout na tlačítko pro přihlášení",
@@ -248,7 +257,7 @@ class pnd(hass.Hass):
         raise Exception("Failed to find or click the login button")
     # Allow time for login processing
     time.sleep(5)  # Adjust as needed
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": Current URL:", driver.current_url)
+    log("Current URL:", driver.current_url)
     wait = WebDriverWait(driver, 20)  # 10-second timeout
     body = driver.find_element(By.TAG_NAME, 'body')
     # Check if the specified H1 tag is present
@@ -257,7 +266,7 @@ class pnd(hass.Hass):
         h1_element = wait.until(EC.presence_of_element_located((By.XPATH, f"//h1[contains(text(), '{h1_text}')]")))
     except:
         alert_widget_content = driver.find_element(By.CLASS_NAME, "alertWidget__content").text
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: {alert_widget_content}{Colors.RESET}")
+        log(f"{Colors.RED}ERROR: {alert_widget_content}{Colors.RESET}")
         self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
         "status": "ERROR: Není možné se přihlásit do aplikace",
         "friendly_name": "PND Script Status"
@@ -266,9 +275,9 @@ class pnd(hass.Hass):
     body.screenshot(self.download_folder+"/01.png")
     # Print whether the H1 tag with the specified text is found
     if h1_element:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"H1 tag with text '{h1_text}' is present.")
+        log(f"H1 tag with text '{h1_text}' is present.")
     else:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f" {Colors.RED}ERROR: H1 tag with text '{h1_text}' is not found.{Colors.RESET}")
+        log(f" {Colors.RED}ERROR: H1 tag with text '{h1_text}' is not found.{Colors.RESET}")
         self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
         self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
             "status": f"ERROR: Text '{h1_text}' nebyl nalezen na stránce, zkuste skript spustit později znovu.",
@@ -279,23 +288,23 @@ class pnd(hass.Hass):
     # Check for Modal Dialog
     try:
         modal_dialog = driver.find_element(By.CLASS_NAME, "modal-dialog")
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.YELLOW}Modal Dialog found{Colors.RESET}")
+        log(f"{Colors.YELLOW}Modal Dialog found{Colors.RESET}")
         # Close the modal dialog
         try:
             body.screenshot(self.download_folder+"/01-modal.png")
-            print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.YELLOW}Closing Modal Dialog{Colors.RESET}")
+            log(f"{Colors.YELLOW}Closing Modal Dialog{Colors.RESET}")
             close_button = modal_dialog.find_element(By.XPATH, ".//button[contains(@class, 'btn pnd-btn btn-primary') and contains(text(), 'Přečteno')]")
             close_button.click()
-            print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.GREEN}Modal Dialog closed successfully, reloading page{Colors.RESET}")
+            log(f"{Colors.GREEN}Modal Dialog closed successfully, reloading page{Colors.RESET}")
             time.sleep(2)  # Allow time for the modal to close
             # Reload the page after clicking the button
             driver.refresh()
-            print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.GREEN}Page reloaded successfully{Colors.RESET}")
+            log(f"{Colors.GREEN}Page reloaded successfully{Colors.RESET}")
         except:
-            print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: Close button not found in the modal dialog.{Colors.RESET}")
+            log(f"{Colors.RED}ERROR: Close button not found in the modal dialog.{Colors.RESET}")
             raise Exception("Unable to click the close button in the modal dialog")
     except:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.GREEN}Modal dialog not found. Continuing without closing modal.{Colors.RESET}")
+        log(f"{Colors.GREEN}Modal dialog not found. Continuing without closing modal.{Colors.RESET}")
     time.sleep(2)  # Allow time for the page to load
     # Get the app version
     version_element = driver.find_element(By.XPATH, "//div[contains(text(), 'Verze aplikace:')]")
@@ -306,7 +315,7 @@ class pnd(hass.Hass):
     self.set_state_safe(f"sensor.pnd_app_version{self.suffix}", state=version_number, attributes={
         "friendly_name": "PND App Version",
     })
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"App Version: {version_number}")
+    log(f"App Version: {version_number}")
 
     first_pnd_window = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".pnd-window")))
 
@@ -339,20 +348,20 @@ class pnd(hass.Hass):
         except TimeoutException:
             continue
     else:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f" {Colors.RED}ERROR: Rychla Sestava neni mozne vybrat!{Colors.RESET}")
+        log(f" {Colors.RED}ERROR: Rychla Sestava neni mozne vybrat!{Colors.RESET}")
         self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
         self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
             "status": "ERROR: Nebylo možné vybrat 'Rychlá sestava' po 10 pokusech. Zkuste skript spustit později znovu.",
             "friendly_name": "PND Script Status"
         })
         raise Exception("Failed to find 'Rychlá sestava' after 10 attempts")
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + f": {Colors.GREEN}Rychla Sestava selected successfully!{Colors.RESET}")
+    log(f"{Colors.GREEN}Rychla Sestava selected successfully!{Colors.RESET}")
     body.screenshot(self.download_folder+"/03.png")
 
     # Check the input field value
     time.sleep(1)  # Allow any JavaScript updates
 
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + f": Selecting ELM '{self.ELM}'")
+    log(f"Selecting ELM '{self.ELM}'")
 
     soup = BeautifulSoup(driver.page_source, 'html.parser')
     dropdown_label = wait.until(EC.visibility_of_element_located((By.XPATH, "//label[contains(text(), 'Množina zařízení')]")))
@@ -361,7 +370,7 @@ class pnd(hass.Hass):
     elm_spans = soup.find_all('span', class_='multiselect__option', text=lambda text: text and text.startswith('ELM'))
     elm_values = [span.text for span in elm_spans]
     elm_values_string = ", ".join(elm_values)
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + f": Valid ELM numbers '{elm_values_string}'")
+    log(f"Valid ELM numbers '{elm_values_string}'")
 
     # Navigate to the dropdown based on its label "Množina zařízení"
     # Find the label by text, then navigate to the associated dropdown
@@ -370,7 +379,7 @@ class pnd(hass.Hass):
     wait = WebDriverWait(driver, 2)
     dropdown_label = wait.until(EC.visibility_of_element_located((By.XPATH, "//label[contains(text(), 'Množina zařízení')]")))
     parent_element = dropdown_label.find_element(By.XPATH, ".//ancestor::div[contains(@class, 'form-group')]")
-    #print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + f": {Colors.CYAN}{parent_element.get_attribute('outerHTML')}{Colors.RESET}")
+    #log(f"{Colors.CYAN}{parent_element.get_attribute('outerHTML')}{Colors.RESET}")
     with open(self.download_folder+'/debug-ELM.txt', 'a') as file:
         file.write(parent_element.get_attribute('outerHTML')+ "\n")
     dropdown = dropdown_label.find_element(By.XPATH, "./following-sibling::div//div[contains(@class, 'multiselect__select')]")  # Adjusted to the next input field within a sibling div
@@ -382,7 +391,7 @@ class pnd(hass.Hass):
         try:
             option = wait.until(EC.element_to_be_clickable((By.XPATH, f"//span[contains(text(), '{self.ELM}')]")))
         except:
-            print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: Failed to find '{self.ELM}' in the selection - check ELM attribute in the apps.yaml{Colors.RESET}")
+            log(f"{Colors.RED}ERROR: Failed to find '{self.ELM}' in the selection - check ELM attribute in the apps.yaml{Colors.RESET}")
             self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
             self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
                 "status": f"ERROR: Nebylo možné najít '{self.ELM}' v nabídce. Zkontrolujte ELM atribut v nastavení aplikace.",
@@ -398,7 +407,7 @@ class pnd(hass.Hass):
             span = parent_element.find_element(By.XPATH, ".//span[@class='multiselect__single']").text
         except:
             span = ''
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + f": {Colors.CYAN}ELM Status: {span} - {self.ELM}{Colors.RESET}")
+        log(f"{Colors.CYAN}ELM Status: {span} - {self.ELM}{Colors.RESET}")
         #if 'disabled' not in class_attribute:
         parent_element = dropdown_label.find_element(By.XPATH, ".//ancestor::div[contains(@class, 'form-group')]")
         with open(self.download_folder+'/debug-ELM.txt', 'a') as file:
@@ -408,19 +417,19 @@ class pnd(hass.Hass):
         with open(self.download_folder+'/debug-ELM.txt', 'a') as file:
             file.write(parent_element.get_attribute('outerHTML')+ "\n")
         if 'disabled' not in class_attribute and span.strip() != '':
-            print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.GREEN}Iteration {i}: Vyhledat Button NOT disabled{Colors.RESET}")
+            log(f"{Colors.GREEN}Iteration {i}: Vyhledat Button NOT disabled{Colors.RESET}")
             break
         else:
-            print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.YELLOW}Iteration {i}: Vyhledat Button IS disabled{Colors.RESET}")
+            log(f"{Colors.YELLOW}Iteration {i}: Vyhledat Button IS disabled{Colors.RESET}")
     else:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f" {Colors.RED}ERROR: Failed to find '{self.ELM}' after 10 attempts{Colors.RESET}")
+        log(f" {Colors.RED}ERROR: Failed to find '{self.ELM}' after 10 attempts{Colors.RESET}")
         self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
         self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
             "status": f"ERROR: Nebylo možné najít '{self.ELM}' po 10 pokusech. Zkontrolujte ELM atribut v nastavení aplikace.",
             "friendly_name": "PND Script Status"
         })
         raise Exception(f"Failed to find '{self.ELM}' after 10 attempts")
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.GREEN}Device ELM '{self.ELM}' selected successfully!{Colors.RESET}")
+    log(f"{Colors.GREEN}Device ELM '{self.ELM}' selected successfully!{Colors.RESET}")
     body.screenshot(self.download_folder+"/04.png")
 
     # Navigate to the dropdown based on its label "Období"
@@ -435,7 +444,7 @@ class pnd(hass.Hass):
         option_vcera = wait.until(EC.element_to_be_clickable((By.XPATH, "//span[contains(text(), 'Včera') and contains(@class, 'multiselect__option')]")))
         option_vcera.click()
     except:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: Failed to select 'Včera' in the dropdown{Colors.RESET}")
+        log(f"{Colors.RED}ERROR: Failed to select 'Včera' in the dropdown{Colors.RESET}")
         self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
         self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
             "status": "ERROR: Nepodařilo se vybrat 'Včera' v nabídce",
@@ -447,9 +456,9 @@ class pnd(hass.Hass):
     try:
         button = wait.until(EC.presence_of_element_located((By.XPATH, "//button[contains(., 'Vyhledat data')]")))
         button.click()
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.GREEN}Button 'Vyhledat data' clicked successfully!{Colors.RESET}")
+        log(f"{Colors.GREEN}Button 'Vyhledat data' clicked successfully!{Colors.RESET}")
     except Exception as e:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}Failed to find or click the 'Vyhledat data' button:{Colors.RESET}", str(e))
+        log(f"{Colors.RED}Failed to find or click the 'Vyhledat data' button:{Colors.RESET}", str(e))
         self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
         self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
             "status": "ERROR: Nepodařilo se nalézt nebo kliknout na tlačítko 'Vyhledat data'",
@@ -469,7 +478,7 @@ class pnd(hass.Hass):
         link = WebDriverWait(first_pnd_window, 10).until(
             EC.element_to_be_clickable((By.XPATH, ".//a[contains(text(), '" + link_text + "')]"))
         )
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " +  link.text)
+        log( link.text)
 
         # Navigate to the parent element using XPath
         parent_element = driver.execute_script("return arguments[0].parentNode;", link)
@@ -482,7 +491,7 @@ class pnd(hass.Hass):
         body.click()
         body.screenshot(self.download_folder+"/daily-body-07c.png")
     except:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: Failed to find link {link_text}{Colors.RESET}")
+        log(f"{Colors.RED}ERROR: Failed to find link {link_text}{Colors.RESET}")
         self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
         self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
             "status": f"ERROR: Nepodařilo se najít odkaz pro denní export {link_text}",
@@ -497,10 +506,10 @@ class pnd(hass.Hass):
 
         # Wait for the CSV link and click it
         csv_link = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[normalize-space()='CSV']")))
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"Downloading CSV file for {link_text}")
+        log(f"Downloading CSV file for {link_text}")
         csv_link.click()
     except:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: Failed to download CSV file for {link_text}{Colors.RESET}")
+        log(f"{Colors.RED}ERROR: Failed to download CSV file for {link_text}{Colors.RESET}")
         self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
         self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
             "status": f"ERROR: Nepodařilo se stáhnout CSV soubor pro denní export {link_text}",
@@ -519,9 +528,9 @@ class pnd(hass.Hass):
         new_filename = os.path.join(self.download_folder, "daily-consumption.csv")
         os.remove(new_filename) if os.path.exists(new_filename) else None
         os.rename(downloaded_file, new_filename)
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.GREEN}File downloaded and saved as: {new_filename}{Colors.RESET}")
+        log(f"{Colors.GREEN}File downloaded and saved as: {new_filename}{Colors.RESET}")
     else:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED} ERROR: No file was downloaded for {link_text}{Colors.RESET}")
+        log(f"{Colors.RED} ERROR: No file was downloaded for {link_text}{Colors.RESET}")
 
     wait = WebDriverWait(driver, 10)  # Adjust timeout as necessary
 
@@ -532,7 +541,7 @@ class pnd(hass.Hass):
         link = WebDriverWait(first_pnd_window, 10).until(
             EC.element_to_be_clickable((By.XPATH, ".//a[contains(text(), '" + link_text + "')]"))
         )
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " +  link.text)
+        log( link.text)
 
         # Navigate to the parent element using XPath
         parent_element = driver.execute_script("return arguments[0].parentNode;", link)
@@ -545,7 +554,7 @@ class pnd(hass.Hass):
         body.click()
         body.screenshot(self.download_folder+"/daily-body-08c.png")
     except:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: Failed to find link {link_text}{Colors.RESET}")
+        log(f"{Colors.RED}ERROR: Failed to find link {link_text}{Colors.RESET}")
         self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
         self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
             "status": f"ERROR: Nepodařilo se najít odkaz pro denní export {link_text}",
@@ -560,11 +569,11 @@ class pnd(hass.Hass):
 
         # Wait for the CSV link and click it
         csv_link = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[normalize-space()='CSV']")))
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"Downloading CSV file for {link_text}")
+        log(f"Downloading CSV file for {link_text}")
         csv_link.click()
 
     except:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: Failed to download CSV file for {link_text}{Colors.RESET}")
+        log(f"{Colors.RED}ERROR: Failed to download CSV file for {link_text}{Colors.RESET}")
         self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
         self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
             "status": f"ERROR: Nepodařilo se stáhnout CSV soubor pro denní export{link_text}",
@@ -583,11 +592,11 @@ class pnd(hass.Hass):
         new_filename = os.path.join(self.download_folder, "daily-production.csv")
         os.remove(new_filename) if os.path.exists(new_filename) else None
         os.rename(downloaded_file, new_filename)
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.GREEN}File downloaded and saved as: {new_filename}{Colors.RESET}")
+        log(f"{Colors.GREEN}File downloaded and saved as: {new_filename}{Colors.RESET}")
     else:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED} ERROR: No file was downloaded for {link_text}{Colors.RESET}")
+        log(f"{Colors.RED} ERROR: No file was downloaded for {link_text}{Colors.RESET}")
 
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + "All Done - DAILY DATA DOWNLOADED")
+    log("All Done - DAILY DATA DOWNLOADED")
     data_consumption = pd.read_csv(self.download_folder + '/daily-consumption.csv', delimiter=';', encoding='latin1')
     latest_consumption_entry = data_consumption.iloc[-1]  # Get the last row, assuming the data is appended daily
     data_production = pd.read_csv(self.download_folder + '/daily-production.csv', delimiter=';', encoding='latin1')
@@ -604,8 +613,8 @@ class pnd(hass.Hass):
     consumption_value = latest_consumption_entry.iloc[1]
     production_value = latest_production_entry.iloc[1]
 
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.GREEN}Latest entry: {date_consumption_str} - {consumption_value} kWh{Colors.RESET}")
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.GREEN}Latest entry: {date_production_str} - {production_value} kWh{Colors.RESET}")
+    log(f"{Colors.GREEN}Latest entry: {date_consumption_str} - {consumption_value} kWh{Colors.RESET}")
+    log(f"{Colors.GREEN}Latest entry: {date_production_str} - {production_value} kWh{Colors.RESET}")
 
     self.set_state(self.entity_id_consumption, state=consumption_value, attributes={
       "friendly_name": "PND Consumption",
@@ -620,7 +629,7 @@ class pnd(hass.Hass):
       "date": yesterday_production.isoformat()
     })
 
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + "All Done - DAILY DATA PROCESSED")
+    log("All Done - DAILY DATA PROCESSED")
 
     #------------------INTERVAL-----------------------------
     ## Use the label text to find the dropdown button
@@ -648,7 +657,7 @@ class pnd(hass.Hass):
         input_field.send_keys(Keys.TAB)  # or Keys.TAB if you need to move out of the input field
         body.click()
     except:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: Failed to select 'Vlastní období' in the dropdown{Colors.RESET}")
+        log(f"{Colors.RED}ERROR: Failed to select 'Vlastní období' in the dropdown{Colors.RESET}")
         self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
         self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
             "status": "ERROR: Nepodařilo se vybrat 'Vlastní období' v nabídce",
@@ -656,7 +665,7 @@ class pnd(hass.Hass):
         })
         raise Exception("Failed to select 'Vlastní období' in the dropdown")
     # Confirmation output (optional)
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"Data Interval Entered - '{self.datainterval}'")
+    log(f"Data Interval Entered - '{self.datainterval}'")
     #-----------------------------------------------
     time.sleep(1)
     try:
@@ -669,7 +678,7 @@ class pnd(hass.Hass):
         tabulka_dat_button.click()
         body.click()
     except:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: Failed to click 'Tabulka dat' button{Colors.RESET}")
+        log(f"{Colors.RED}ERROR: Failed to click 'Tabulka dat' button{Colors.RESET}")
         self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
         self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
             "status": "ERROR: Nepodařilo se kliknout na tlačítko 'Tabulka dat'",
@@ -682,12 +691,12 @@ class pnd(hass.Hass):
 
     # Find and click the link by its exact text
     try:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + "Selecting 07 Profil spotřeby za den (+A)")
+        log("Selecting 07 Profil spotřeby za den (+A)")
         link_text = "07 Profil spotřeby za den (+A)"
         link = WebDriverWait(first_pnd_window, 10).until(
             EC.element_to_be_clickable((By.XPATH, ".//a[contains(text(), '" + link_text + "')]"))
         )
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " +  link.text)
+        log( link.text)
 
         # Navigate to the parent element using XPath
         parent_element = driver.execute_script("return arguments[0].parentNode;", link)
@@ -703,7 +712,7 @@ class pnd(hass.Hass):
         time.sleep(1)
         body.click()
     except:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: Failed to find link {link_text}{Colors.RESET}")
+        log(f"{Colors.RED}ERROR: Failed to find link {link_text}{Colors.RESET}")
         self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
         self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
             "status": f"ERROR: Nepodařilo se najít odkaz pro interval export {link_text}",
@@ -713,7 +722,7 @@ class pnd(hass.Hass):
     body.screenshot(self.download_folder+"/interval-body-07c.png")
 
     # Wait for the dropdown toggle and click it using the button text
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + "Exporting data")
+    log("Exporting data")
     wait = WebDriverWait(driver, 10)
     try:
         toggle_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Exportovat data')]")))
@@ -724,7 +733,7 @@ class pnd(hass.Hass):
         csv_link = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[normalize-space()='CSV']")))
         csv_link.click()
     except:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: Failed to download CSV file for {link_text}{Colors.RESET}")
+        log(f"{Colors.RED}ERROR: Failed to download CSV file for {link_text}{Colors.RESET}")
         self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
         self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
             "status": f"ERROR: Nepodařilo se stáhnout CSV soubor pro interval export {link_text}",
@@ -744,21 +753,21 @@ class pnd(hass.Hass):
         os.remove(new_filename) if os.path.exists(new_filename) else None
         os.rename(downloaded_file, new_filename)
         downloaded_file = self.download_folder+"/range-consumption.csv"
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.GREEN}File downloaded and saved as: {new_filename} {round(os.path.getsize(downloaded_file)/1024,2)} KB{Colors.RESET}")
+        log(f"{Colors.GREEN}File downloaded and saved as: {new_filename} {round(os.path.getsize(downloaded_file)/1024,2)} KB{Colors.RESET}")
     else:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: No file was downloaded.{Colors.RESET}")
+        log(f"{Colors.RED}ERROR: No file was downloaded.{Colors.RESET}")
     #----------------------------------------------
     # Wait for the page and elements to fully load
     wait = WebDriverWait(driver, 10)  # Adjust timeout as necessary
 
     # Find and click the link by its exact text
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + "Selecting 08 Profil výroby za den (-A)")
+    log("Selecting 08 Profil výroby za den (-A)")
     link_text = "08 Profil výroby za den (-A)"
     try:
         link = WebDriverWait(first_pnd_window, 10).until(
             EC.element_to_be_clickable((By.XPATH, ".//a[contains(text(), '" + link_text + "')]"))
         )
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " +  link.text)
+        log( link.text)
 
         # Navigate to the parent element using XPath
         parent_element = driver.execute_script("return arguments[0].parentNode;", link)
@@ -776,14 +785,14 @@ class pnd(hass.Hass):
         body.click()
         body.screenshot(self.download_folder+"/interval-body-08c.png")
     except:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: Failed to find link {link_text}{Colors.RESET}")
+        log(f"{Colors.RED}ERROR: Failed to find link {link_text}{Colors.RESET}")
         self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
         self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
             "status": f"ERROR: Nepodařilo se najít odkaz pro interval export {link_text}",
             "friendly_name": "PND Script Status"
         })
     # Wait for the dropdown toggle and click it using the button text
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + "Exporting data")
+    log("Exporting data")
     wait = WebDriverWait(driver, 10)
     try:
         toggle_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Exportovat data')]")))
@@ -795,7 +804,7 @@ class pnd(hass.Hass):
         csv_link = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[normalize-space()='CSV']")))
         csv_link.click()
     except:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}ERROR: Failed to download CSV file for {link_text}{Colors.RESET}")
+        log(f"{Colors.RED}ERROR: Failed to download CSV file for {link_text}{Colors.RESET}")
         self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
         self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
             "status": f"ERROR: Nepodařilo se stáhnout CSV soubor pro interval export {link_text}",
@@ -816,10 +825,10 @@ class pnd(hass.Hass):
         os.remove(new_filename) if os.path.exists(new_filename) else None
         os.rename(downloaded_file, new_filename)
         downloaded_file = self.download_folder+"/range-production.csv"
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.GREEN}File downloaded and saved as: {new_filename} {round(os.path.getsize(downloaded_file)/1024,2)} KB{Colors.RESET}")
+        log(f"{Colors.GREEN}File downloaded and saved as: {new_filename} {round(os.path.getsize(downloaded_file)/1024,2)} KB{Colors.RESET}")
     else:
-        print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.RED}No file was downloaded.{Colors.RESET}")
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + "All Done - INTERVAL DATA DOWNLOADED")
+        log(f"{Colors.RED}No file was downloaded.{Colors.RESET}")
+    log("All Done - INTERVAL DATA DOWNLOADED")
     data_consumption = pd.read_csv(self.download_folder + '/range-consumption.csv', delimiter=';', encoding='latin1', converters={0: lambda s: dt.strptime(s.replace("24:00:00","23:59:00"), "%d.%m.%Y %H:%M:%S")})
     data_production = pd.read_csv(self.download_folder + '/range-production.csv', delimiter=';', encoding='latin1', converters={0: lambda s: dt.strptime(s.replace("24:00:00","23:59:00"), "%d.%m.%Y %H:%M:%S")})
 
@@ -864,17 +873,17 @@ class pnd(hass.Hass):
       "unit_of_measurement": "%"
     })
     #----------------------------------------------
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + "All Done - INTERVAL DATA PROCESSED")
+    log("All Done - INTERVAL DATA PROCESSED")
 
 
     # Close the browser
     quit_driver(driver)
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + "All Done - BROWSER CLOSED")
+    log("All Done - BROWSER CLOSED")
     self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + "Sensor State Set to OFF")
+    log("Sensor State Set to OFF")
     zip_folder(f"/homeassistant/appdaemon/apps/pnd{self.suffix}", f"/homeassistant/appdaemon/apps/debug{self.suffix}.zip")
     shutil.move(f"/homeassistant/appdaemon/apps/debug{self.suffix}.zip", self.download_folder+"/debug.zip")
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + "Debug Files Zipped")
+    log("Debug Files Zipped")
     script_end_time = dt.now()
     script_duration = script_end_time - script_start_time
     self.set_state(f"sensor.pnd_script_duration{self.suffix}", state=script_duration,attributes={
@@ -883,5 +892,5 @@ class pnd(hass.Hass):
     self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Stopped",attributes={
       "status": "Finished",
     })
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + ": " + f"{Colors.CYAN}********************* Duration: {script_duration} *********************{Colors.RESET}")
-    print(dt.now().strftime("%Y-%m-%d %H:%M:%S") + f": {Colors.CYAN}********************* Finished " +  ver + f" *********************{Colors.RESET}")
+    log(f"{Colors.CYAN}********************* Duration: {script_duration} *********************{Colors.RESET}")
+    log(f"{Colors.CYAN}********************* Finished " +  ver + f" *********************{Colors.RESET}")
