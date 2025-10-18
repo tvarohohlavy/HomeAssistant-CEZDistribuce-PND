@@ -1,14 +1,11 @@
 ver = "0.9.9.7"
 import appdaemon.plugins.hass.hassapi as hass
 import time
-import datetime
 import os
-import sys
 import shutil
 import pandas as pd
 import zipfile
-import shutil
-from datetime import datetime as dt
+from datetime import datetime as dt, timedelta
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -121,14 +118,14 @@ def quit_driver(driver):
 
 def conv_date(s):
     s = s.replace("24:00:00", "23:59:00")
-    return datetime.datetime.strptime(s, "%d.%m.%Y %H:%M:%S")
+    return dt.strptime(s, "%d.%m.%Y %H:%M:%S")
 
 def _normalize_ha_state(value):
     if value is None:
         return "unknown"
     if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
         return "unknown"
-    if isinstance(value, datetime.timedelta):
+    if isinstance(value, timedelta):
         value = str(value)
     s = str(value)
     s = " ".join(s.replace("\xa0", " ").split())
@@ -605,10 +602,10 @@ class pnd(hass.Hass):
     # Extract date and consumption values
     date_consumption_str = latest_consumption_entry.iloc[0]
     date_consumption_obj = conv_date(date_consumption_str)
-    yesterday_consumption = date_consumption_obj - datetime.timedelta(days=1)
+    yesterday_consumption = date_consumption_obj - timedelta(days=1)
     date_production_str = latest_production_entry.iloc[0]
     date_production_obj = conv_date(date_production_str)
-    yesterday_production = date_production_obj - datetime.timedelta(days=1)
+    yesterday_production = date_production_obj - timedelta(days=1)
 
     consumption_value = latest_consumption_entry.iloc[1]
     production_value = latest_production_entry.iloc[1]
@@ -832,7 +829,7 @@ class pnd(hass.Hass):
     data_consumption = pd.read_csv(self.download_folder + '/range-consumption.csv', delimiter=';', encoding='latin1', converters={0: lambda s: dt.strptime(s.replace("24:00:00","23:59:00"), "%d.%m.%Y %H:%M:%S")})
     data_production = pd.read_csv(self.download_folder + '/range-production.csv', delimiter=';', encoding='latin1', converters={0: lambda s: dt.strptime(s.replace("24:00:00","23:59:00"), "%d.%m.%Y %H:%M:%S")})
 
-    date_str = [dt.date().isoformat() for dt in data_consumption.iloc[:, 0]]
+    date_str = [_dt.date().isoformat() for _dt in data_consumption.iloc[:, 0]]
 
     consumption_str = data_consumption.iloc[:, 1].to_list()
     production_str = data_production.iloc[:, 1].to_list()
