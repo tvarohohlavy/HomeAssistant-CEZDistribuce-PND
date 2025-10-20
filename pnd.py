@@ -1,4 +1,4 @@
-ver = "0.9.9.7"
+VERSION = "0.9.9.7"
 import appdaemon.plugins.hass.hassapi as hass
 import time
 import os
@@ -188,7 +188,7 @@ class pnd(hass.Hass):
     def run_pnd(self, event_name, data, kwargs):
         script_start_time = dt.now()
         log(
-            f"{Colors.CYAN}********************* Starting {ver} *********************{Colors.RESET}"
+            f"{Colors.CYAN}********************* Starting {VERSION} *********************{Colors.RESET}"
         )
         self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="on")
         self.set_state(
@@ -1310,5 +1310,5 @@ class pnd(hass.Hass):
             f"{Colors.CYAN}********************* Duration: {script_duration} *********************{Colors.RESET}"
         )
         log(
-            f"{Colors.CYAN}********************* Finished {ver} *********************{Colors.RESET}"
+            f"{Colors.CYAN}********************* Finished {VERSION} *********************{Colors.RESET}"
         )
