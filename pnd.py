@@ -185,6 +185,100 @@ class pnd(hass.Hass):
             entity_id, state=_normalize_ha_state(state), attributes=attributes or {}
         )
 
+    def set_state_pnd_running(self, state):
+        state_str = "on" if state else "off"
+        self.set_state(f"binary_sensor.pnd_running{self.suffix}", state=state_str)
+
+    def set_state_pnd_script_status(self, state, status_message):
+        self.set_state(
+            f"sensor.pnd_script_status{self.suffix}",
+            state=state,
+            attributes={"status": status_message, "friendly_name": "PND Script Status"},
+        )
+
+    def select_export_profile(self, driver, profile_type, link_text, image_id):
+        wait = WebDriverWait(driver, 10)  # Adjust timeout as necessary
+        body = driver.find_element(By.TAG_NAME, "body")
+        body.screenshot(f"{self.download_folder}/{profile_type}-body-{image_id}.png")
+        # Find and click the link by its exact text
+        try:
+            link = WebDriverWait(
+                WebDriverWait(driver, 20).until(
+                    EC.visibility_of_element_located((By.CSS_SELECTOR, ".pnd-window"))
+                ),
+                10,
+            ).until(
+                EC.element_to_be_clickable(
+                    (By.XPATH, ".//a[contains(text(), '" + link_text + "')]")
+                )
+            )
+            log(f"Selecting profile: {link.text}")
+            time.sleep(2)
+            body.screenshot(
+                f"{self.download_folder}/{profile_type}-body-{image_id}a.png"
+            )
+            link.click()
+            body.screenshot(
+                f"{self.download_folder}/{profile_type}-body-{image_id}b.png"
+            )
+            body.click()
+            body.screenshot(
+                f"{self.download_folder}/{profile_type}-body-{image_id}c.png"
+            )
+        except:
+            log(f"{Colors.RED}ERROR: Failed to find link {link_text}{Colors.RESET}")
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                f"ERROR: Nepodařilo se najít odkaz pro {profile_type} profil {link_text}",
+            )
+
+    def download_export_file(self, driver, profile_type, link_text):
+        # Wait for the dropdown toggle and click it using the button text
+        try:
+            wait = WebDriverWait(driver, 10)  # 10-second timeout
+            # Wait for the dropdown toggle and click it
+            toggle_button = wait.until(
+                EC.element_to_be_clickable(
+                    (By.XPATH, "//button[contains(text(), 'Exportovat data')]")
+                )
+            )
+            time.sleep(2)
+            toggle_button.click()
+            # Wait for the CSV link and click it
+            csv_link = wait.until(
+                EC.element_to_be_clickable((By.XPATH, "//a[normalize-space()='CSV']"))
+            )
+            log(f"Downloading CSV file for {link_text}")
+            csv_link.click()
+        except:
+            log(
+                f"{Colors.RED}ERROR: Failed to download CSV file for {link_text}{Colors.RESET}"
+            )
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                f"ERROR: Nepodařilo se stáhnout CSV soubor pro {profile_type} profil {link_text}",
+            )
+        # Wait for the download to complete
+        time.sleep(5)
+
+    def rename_downloaded_file(self, new_filename, link_text):
+        # downloaded_file = wait_for_download(self.download_folder)
+        downloaded_file = os.path.join(self.download_folder, "pnd_export.csv")
+        # Rename the file if it was downloaded
+        if downloaded_file:
+            new_filename = os.path.join(self.download_folder, new_filename)
+            os.remove(new_filename) if os.path.exists(new_filename) else None
+            os.rename(downloaded_file, new_filename)
+            log(
+                f"{Colors.GREEN}File downloaded and saved as: {new_filename}{Colors.RESET}"
+            )
+        else:
+            log(
+                f"{Colors.RED}ERROR: No file was downloaded for {link_text}{Colors.RESET}"
+            )
+
     def run_pnd(self, event_name, data, kwargs):
         script_start_time = dt.now()
         log(
