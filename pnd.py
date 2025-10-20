@@ -196,6 +196,41 @@ class pnd(hass.Hass):
             attributes={"status": status_message, "friendly_name": "PND Script Status"},
         )
 
+    def load_chrome_driver(self):
+        chrome_options = Options()
+        chrome_options.add_experimental_option(
+            "prefs",
+            {
+                "download.default_directory": self.download_folder,  # Set download folder
+                "download.prompt_for_download": False,  # Disable download prompt
+                "download.directory_upgrade": True,  # Manage download directory
+                "plugins.always_open_pdf_externally": False,  # Automatically open PDFs
+            },
+        )
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--log-level=3")  # Disable logging
+        # load service
+        service = Service("/usr/bin/chromedriver")
+        # load driver
+        try:
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+            log("Driver Loaded")
+        except:
+            log(
+                f"{Colors.RED}ERROR: Unable to initialize Chrome Driver - exitting{Colors.RESET}"
+            )
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                "ERROR: Nepodařilo se inicializovat Chrome Driver, zkontroluj nastavení AppDaemon",
+            )
+            raise Exception("Unable to initialize Chrome Driver - exitting")
+        driver.set_window_size(1920, 1080)
+        return driver
+
     def select_export_profile(self, driver, profile_type, link_text, image_id):
         wait = WebDriverWait(driver, 10)  # Adjust timeout as necessary
         body = driver.find_element(By.TAG_NAME, "body")
@@ -290,39 +325,7 @@ class pnd(hass.Hass):
         log("Hello from AppDaemon for Portal Namerenych Dat")
         delete_folder_contents(self.download_folder + "/")
         os.makedirs(self.download_folder, exist_ok=True)
-        chrome_options = Options()
-        chrome_options.add_experimental_option(
-            "prefs",
-            {
-                "download.default_directory": self.download_folder,  # Set download folder
-                "download.prompt_for_download": False,  # Disable download prompt
-                "download.directory_upgrade": True,  # Manage download directory
-                "plugins.always_open_pdf_externally": False,  # Automatically open PDFs
-            },
-        )
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--log-level=3")  # Disable logging
-        # load service
-        service = Service("/usr/bin/chromedriver")
-        # load driver
-        try:
-            driver = webdriver.Chrome(service=service, options=chrome_options)
-            log("Driver Loaded")
-        except:
-            log(
-                f"{Colors.RED}ERROR: Unable to initialize Chrome Driver - exitting{Colors.RESET}"
-            )
-            self.set_state_pnd_running(False)
-            self.set_state_pnd_script_status(
-                "Error",
-                "ERROR: Nepodařilo se inicializovat Chrome Driver, zkontroluj nastavení AppDaemon",
-            )
-            raise Exception("Unable to initialize Chrome Driver - exitting")
-        # Open a website
-        driver.set_window_size(1920, 1080)
+        driver = self.load_chrome_driver()
         try:
             # driver.get("https://dip.cezdistribuce.cz/irj/portal/?zpnd=")  # Change to the website's login page
             PNDURL = "https://pnd.cezdistribuce.cz/cezpnd2/external/dashboard/view"
