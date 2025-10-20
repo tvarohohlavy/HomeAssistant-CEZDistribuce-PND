@@ -284,12 +284,8 @@ class pnd(hass.Hass):
         log(
             f"{Colors.CYAN}********************* Starting {VERSION} *********************{Colors.RESET}"
         )
-        self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="on")
-        self.set_state(
-            f"sensor.pnd_script_status{self.suffix}",
-            state="Running",
-            attributes={"status": "OK", "friendly_name": "PND Script Status"},
-        )
+        self.set_state_pnd_running(True)
+        self.set_state_pnd_script_status("Running", "OK")
         log("----------------------------------------------")
         log("Hello from AppDaemon for Portal Namerenych Dat")
         delete_folder_contents(self.download_folder + "/")
@@ -319,14 +315,10 @@ class pnd(hass.Hass):
             log(
                 f"{Colors.RED}ERROR: Unable to initialize Chrome Driver - exitting{Colors.RESET}"
             )
-            self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-            self.set_state(
-                f"sensor.pnd_script_status{self.suffix}",
-                state="Error",
-                attributes={
-                    "status": "ERROR: Nepodařilo se inicializovat Chrome Driver, zkontroluj nastavení AppDaemon",
-                    "friendly_name": "PND Script Status",
-                },
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                "ERROR: Nepodařilo se inicializovat Chrome Driver, zkontroluj nastavení AppDaemon",
             )
             raise Exception("Unable to initialize Chrome Driver - exitting")
         # Open a website
@@ -339,14 +331,9 @@ class pnd(hass.Hass):
             log("Website Opened")
         except:
             log(f"{Colors.RED}ERROR: Unable to open website - exitting{Colors.RESET}")
-            self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-            self.set_state(
-                f"sensor.pnd_script_status{self.suffix}",
-                state="Error",
-                attributes={
-                    "status": "ERROR: Nepodařilo se otevřít webovou stránku PND portálu",
-                    "friendly_name": "PND Script Status",
-                },
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error", "ERROR: Nepodařilo se otevřít webovou stránku PND portálu"
             )
             raise Exception("Unable to open website - exitting")
         time.sleep(3)  # Allow time for the page to load
@@ -360,12 +347,6 @@ class pnd(hass.Hass):
             cookie_banner_close_button.click()
         except:
             log("No cookie banner found")
-            # self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-            # self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
-            #    "status": "ERROR: Nepodařilo se nalézt cookie banner, zkuste za chvíli znovu spustit skript.",
-            #    "friendly_name": "PND Script Status"
-            # })
-            # raise Exception("Unable to open website - exitting")
         time.sleep(1)  # Allow time for the page to load
         # Simulate login
         try:
@@ -404,14 +385,10 @@ class pnd(hass.Hass):
             log(
                 f"{Colors.RED}ERROR: Failed to enter login details or find and click the login button{Colors.RESET}"
             )
-            self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-            self.set_state(
-                f"sensor.pnd_script_status{self.suffix}",
-                state="Error",
-                attributes={
-                    "status": "ERROR: Nepodařilo se vyplnit přihlašovací údaje nebo najít a kliknout na tlačítko pro přihlášení",
-                    "friendly_name": "PND Script Status",
-                },
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                "ERROR: Nepodařilo se vyplnit přihlašovací údaje nebo najít a kliknout na tlačítko pro přihlášení",
             )
             raise Exception("Failed to find or click the login button")
         # Allow time for login processing
@@ -432,13 +409,9 @@ class pnd(hass.Hass):
                 By.CLASS_NAME, "alertWidget__content"
             ).text
             log(f"{Colors.RED}ERROR: {alert_widget_content}{Colors.RESET}")
-            self.set_state(
-                f"sensor.pnd_script_status{self.suffix}",
-                state="Error",
-                attributes={
-                    "status": "ERROR: Není možné se přihlásit do aplikace",
-                    "friendly_name": "PND Script Status",
-                },
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error", "ERROR: Není možné se přihlásit do aplikace"
             )
             raise Exception(f"Unable to login to the app")
         body.screenshot(self.download_folder + "/01.png")
@@ -449,14 +422,10 @@ class pnd(hass.Hass):
             log(
                 f" {Colors.RED}ERROR: H1 tag with text '{h1_text}' is not found.{Colors.RESET}"
             )
-            self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-            self.set_state(
-                f"sensor.pnd_script_status{self.suffix}",
-                state="Error",
-                attributes={
-                    "status": f"ERROR: Text '{h1_text}' nebyl nalezen na stránce, zkuste skript spustit později znovu.",
-                    "friendly_name": "PND Script Status",
-                },
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                f"ERROR: Text '{h1_text}' nebyl nalezen na stránce, zkuste skript spustit později znovu.",
             )
             raise Exception(f"Failed to find H1 tag with text '{h1_text}'")
 
@@ -559,14 +528,10 @@ class pnd(hass.Hass):
                 continue
         else:
             log(f" {Colors.RED}ERROR: Rychla Sestava neni mozne vybrat!{Colors.RESET}")
-            self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-            self.set_state(
-                f"sensor.pnd_script_status{self.suffix}",
-                state="Error",
-                attributes={
-                    "status": "ERROR: Nebylo možné vybrat 'Rychlá sestava' po 10 pokusech. Zkuste skript spustit později znovu.",
-                    "friendly_name": "PND Script Status",
-                },
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                "ERROR: Nebylo možné vybrat 'Rychlá sestava' po 10 pokusech. Zkuste skript spustit později znovu.",
             )
             raise Exception("Failed to find 'Rychlá sestava' after 10 attempts")
         log(f"{Colors.GREEN}Rychla Sestava selected successfully!{Colors.RESET}")
@@ -631,14 +596,10 @@ class pnd(hass.Hass):
                 log(
                     f"{Colors.RED}ERROR: Failed to find '{self.ELM}' in the selection - check ELM attribute in the apps.yaml{Colors.RESET}"
                 )
-                self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-                self.set_state(
-                    f"sensor.pnd_script_status{self.suffix}",
-                    state="Error",
-                    attributes={
-                        "status": f"ERROR: Nebylo možné najít '{self.ELM}' v nabídce. Zkontrolujte ELM atribut v nastavení aplikace.",
-                        "friendly_name": "PND Script Status",
-                    },
+                self.set_state_pnd_running(False)
+                self.set_state_pnd_script_status(
+                    "Error",
+                    f"ERROR: Nebylo možné najít '{self.ELM}' v nabídce. Zkontrolujte ELM atribut v nastavení aplikace.",
                 )
                 raise Exception(f"Failed to find '{self.ELM}' in the selection")
             option.click()
@@ -678,14 +639,10 @@ class pnd(hass.Hass):
             log(
                 f" {Colors.RED}ERROR: Failed to find '{self.ELM}' after 10 attempts{Colors.RESET}"
             )
-            self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-            self.set_state(
-                f"sensor.pnd_script_status{self.suffix}",
-                state="Error",
-                attributes={
-                    "status": f"ERROR: Nebylo možné najít '{self.ELM}' po 10 pokusech. Zkontrolujte ELM atribut v nastavení aplikace.",
-                    "friendly_name": "PND Script Status",
-                },
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                f"ERROR: Nebylo možné najít '{self.ELM}' po 10 pokusech. Zkontrolujte ELM atribut v nastavení aplikace.",
             )
             raise Exception(f"Failed to find '{self.ELM}' after 10 attempts")
         log(
@@ -722,14 +679,9 @@ class pnd(hass.Hass):
             log(
                 f"{Colors.RED}ERROR: Failed to select 'Včera' in the dropdown{Colors.RESET}"
             )
-            self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-            self.set_state(
-                f"sensor.pnd_script_status{self.suffix}",
-                state="Error",
-                attributes={
-                    "status": "ERROR: Nepodařilo se vybrat 'Včera' v nabídce",
-                    "friendly_name": "PND Script Status",
-                },
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error", "ERROR: Nepodařilo se vybrat 'Včera' v nabídce"
             )
             raise Exception("Failed to select 'Včera' in the dropdown")
         body.screenshot(self.download_folder + "/05.png")
@@ -748,14 +700,10 @@ class pnd(hass.Hass):
             log(
                 f"{Colors.RED}Failed to find or click the 'Vyhledat data' button:{Colors.RESET} {str(e)}"
             )
-            self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-            self.set_state(
-                f"sensor.pnd_script_status{self.suffix}",
-                state="Error",
-                attributes={
-                    "status": "ERROR: Nepodařilo se nalézt nebo kliknout na tlačítko 'Vyhledat data'",
-                    "friendly_name": "PND Script Status",
-                },
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                "ERROR: Nepodařilo se nalézt nebo kliknout na tlačítko 'Vyhledat data'",
             )
             raise Exception("Failed to find or click the 'Vyhledat data' button")
         body.screenshot(self.download_folder + "/06.png")
@@ -789,14 +737,10 @@ class pnd(hass.Hass):
             body.screenshot(self.download_folder + "/daily-body-07c.png")
         except:
             log(f"{Colors.RED}ERROR: Failed to find link {link_text}{Colors.RESET}")
-            self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-            self.set_state(
-                f"sensor.pnd_script_status{self.suffix}",
-                state="Error",
-                attributes={
-                    "status": f"ERROR: Nepodařilo se najít odkaz pro denní export {link_text}",
-                    "friendly_name": "PND Script Status",
-                },
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                f"ERROR: Nepodařilo se najít odkaz pro denní export {link_text}"
             )
         # Wait for the dropdown toggle and click it using the button text
         try:
@@ -819,14 +763,10 @@ class pnd(hass.Hass):
             log(
                 f"{Colors.RED}ERROR: Failed to download CSV file for {link_text}{Colors.RESET}"
             )
-            self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-            self.set_state(
-                f"sensor.pnd_script_status{self.suffix}",
-                state="Error",
-                attributes={
-                    "status": f"ERROR: Nepodařilo se stáhnout CSV soubor pro denní export {link_text}",
-                    "friendly_name": "PND Script Status",
-                },
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                f"ERROR: Nepodařilo se stáhnout CSV soubor pro denní export {link_text}",
             )
         # Wait for the download to complete
         time.sleep(5)
@@ -876,14 +816,10 @@ class pnd(hass.Hass):
             body.screenshot(self.download_folder + "/daily-body-08c.png")
         except:
             log(f"{Colors.RED}ERROR: Failed to find link {link_text}{Colors.RESET}")
-            self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-            self.set_state(
-                f"sensor.pnd_script_status{self.suffix}",
-                state="Error",
-                attributes={
-                    "status": f"ERROR: Nepodařilo se najít odkaz pro denní export {link_text}",
-                    "friendly_name": "PND Script Status",
-                },
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                f"ERROR: Nepodařilo se najít odkaz pro denní export {link_text}",
             )
         # Wait for the dropdown toggle and click it using the button text
         wait = WebDriverWait(driver, 10)
@@ -907,14 +843,10 @@ class pnd(hass.Hass):
             log(
                 f"{Colors.RED}ERROR: Failed to download CSV file for {link_text}{Colors.RESET}"
             )
-            self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-            self.set_state(
-                f"sensor.pnd_script_status{self.suffix}",
-                state="Error",
-                attributes={
-                    "status": f"ERROR: Nepodařilo se stáhnout CSV soubor pro denní export{link_text}",
-                    "friendly_name": "PND Script Status",
-                },
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                f"ERROR: Nepodařilo se stáhnout CSV soubor pro denní export {link_text}",
             )
         # Wait for the download to complete
         time.sleep(5)
@@ -1047,14 +979,9 @@ class pnd(hass.Hass):
             log(
                 f"{Colors.RED}ERROR: Failed to select 'Vlastní období' in the dropdown{Colors.RESET}"
             )
-            self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-            self.set_state(
-                f"sensor.pnd_script_status{self.suffix}",
-                state="Error",
-                attributes={
-                    "status": "ERROR: Nepodařilo se vybrat 'Vlastní období' v nabídce",
-                    "friendly_name": "PND Script Status",
-                },
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error", "ERROR: Nepodařilo se vybrat 'Vlastní období' v nabídce"
             )
             raise Exception("Failed to select 'Vlastní období' in the dropdown")
         # Confirmation output (optional)
@@ -1078,14 +1005,10 @@ class pnd(hass.Hass):
             log(
                 f"{Colors.RED}ERROR: Failed to click 'Tabulka dat' button{Colors.RESET}"
             )
-            self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-            self.set_state(
-                f"sensor.pnd_script_status{self.suffix}",
-                state="Error",
-                attributes={
-                    "status": "ERROR: Nepodařilo se kliknout na tlačítko 'Tabulka dat'",
-                    "friendly_name": "PND Script Status",
-                },
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                "ERROR: Nepodařilo se najít nebo kliknout na tlačítko 'Tabulka dat'",
             )
             raise Exception("Failed to click 'Tabulka dat' button")
 
@@ -1120,14 +1043,10 @@ class pnd(hass.Hass):
             body.click()
         except:
             log(f"{Colors.RED}ERROR: Failed to find link {link_text}{Colors.RESET}")
-            self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-            self.set_state(
-                f"sensor.pnd_script_status{self.suffix}",
-                state="Error",
-                attributes={
-                    "status": f"ERROR: Nepodařilo se najít odkaz pro interval export {link_text}",
-                    "friendly_name": "PND Script Status",
-                },
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                f"ERROR: Nepodařilo se najít odkaz pro interval export {link_text}",
             )
 
         body.screenshot(self.download_folder + "/interval-body-07c.png")
@@ -1153,14 +1072,10 @@ class pnd(hass.Hass):
             log(
                 f"{Colors.RED}ERROR: Failed to download CSV file for {link_text}{Colors.RESET}"
             )
-            self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-            self.set_state(
-                f"sensor.pnd_script_status{self.suffix}",
-                state="Error",
-                attributes={
-                    "status": f"ERROR: Nepodařilo se stáhnout CSV soubor pro interval export {link_text}",
-                    "friendly_name": "PND Script Status",
-                },
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                f"ERROR: Nepodařilo se stáhnout CSV soubor pro interval export {link_text}",
             )
         # Wait for the download to complete
         time.sleep(5)
@@ -1215,14 +1130,10 @@ class pnd(hass.Hass):
             body.screenshot(self.download_folder + "/interval-body-08c.png")
         except:
             log(f"{Colors.RED}ERROR: Failed to find link {link_text}{Colors.RESET}")
-            self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-            self.set_state(
-                f"sensor.pnd_script_status{self.suffix}",
-                state="Error",
-                attributes={
-                    "status": f"ERROR: Nepodařilo se najít odkaz pro interval export {link_text}",
-                    "friendly_name": "PND Script Status",
-                },
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                f"ERROR: Nepodařilo se najít odkaz pro interval export {link_text}",
             )
         # Wait for the dropdown toggle and click it using the button text
         log("Exporting data")
@@ -1246,14 +1157,10 @@ class pnd(hass.Hass):
             log(
                 f"{Colors.RED}ERROR: Failed to download CSV file for {link_text}{Colors.RESET}"
             )
-            self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
-            self.set_state(
-                f"sensor.pnd_script_status{self.suffix}",
-                state="Error",
-                attributes={
-                    "status": f"ERROR: Nepodařilo se stáhnout CSV soubor pro interval export {link_text}",
-                    "friendly_name": "PND Script Status",
-                },
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                f"ERROR: Nepodařilo se stáhnout CSV soubor pro interval export {link_text}",
             )
         # Wait for the download to complete
         time.sleep(5)
@@ -1373,7 +1280,7 @@ class pnd(hass.Hass):
         # Close the browser
         quit_driver(driver)
         log("All Done - BROWSER CLOSED")
-        self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
+        self.set_state_pnd_running(False)
         log("Sensor State Set to OFF")
         zip_folder(
             f"/homeassistant/appdaemon/apps/pnd{self.suffix}",
@@ -1393,13 +1300,7 @@ class pnd(hass.Hass):
                 "friendly_name": "PND Script Duration",
             },
         )
-        self.set_state(
-            f"sensor.pnd_script_status{self.suffix}",
-            state="Stopped",
-            attributes={
-                "status": "Finished",
-            },
-        )
+        self.set_state_pnd_script_status("Stopped", "Finished")
         log(
             f"{Colors.CYAN}********************* Duration: {script_duration} *********************{Colors.RESET}"
         )
