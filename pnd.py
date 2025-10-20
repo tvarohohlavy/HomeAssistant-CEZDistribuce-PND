@@ -484,13 +484,21 @@ class pnd(hass.Hass):
         self.set_state_pnd_script_status("Running", "OK")
         log("----------------------------------------------")
         log("Hello from AppDaemon for Portal Namerenych Dat")
+        # Cleanup
         delete_folder_contents(self.download_folder + "/")
         os.makedirs(self.download_folder, exist_ok=True)
+        
+        # Load Chrome Driver
         driver = self.load_chrome_driver()
+        # Load PND Portal
         self.load_pnd_portal(driver)
+        # Login to PND Portal
         self.login_to_pnd_portal(driver)
+        # Get PND Portal version
         self.get_pnd_portal_version(driver)
 
+        wait = WebDriverWait(driver, 20)  # 10-second timeout
+        body = driver.find_element(By.TAG_NAME, "body")
         first_pnd_window = wait.until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, ".pnd-window"))
         )
