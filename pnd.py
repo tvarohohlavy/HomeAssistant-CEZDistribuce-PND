@@ -27,8 +27,7 @@ def log(message):
     print(f"{get_timestamp()}: {message}")
 
 def print_system_info():
-    print(f"""
-    System Information:
+    log(f"""System Information:
     ===================
     Platform: {platform.system()}
     Platform Release: {platform.release()}
@@ -39,20 +38,21 @@ def print_system_info():
     """)
 
 def print_installed_modules():
-    print("\nInstalled Python Modules:")
     result = subprocess.run(['pip', 'list'], stdout=subprocess.PIPE, text=True)
-    print(result.stdout)
+    log(f"""Installed Python Modules:
+    {result.stdout}
+    """)
 
 def get_chromedriver_version():
     try:
         result = subprocess.run(['chromedriver', '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if result.returncode == 0:
             version_info = result.stdout.strip()
-            print(f"ChromeDriver Version: {version_info}")
+            log(f"ChromeDriver Version: {version_info}")
         else:
-            print(f"Error: {result.stderr.strip()}")
+            log(f"Error: {result.stderr.strip()}")
     except FileNotFoundError:
-        print("ChromeDriver is not installed or not found in the system PATH.")
+        log("ChromeDriver is not installed or not found in the system PATH.")
 
 def wait_for_download(directory, timeout=30):
     seconds = 0
