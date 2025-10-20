@@ -248,6 +248,130 @@ class pnd(hass.Hass):
         time.sleep(3)  # Allow time for the page to load
         log(f"Current URL: {driver.current_url}")
 
+    def login_to_pnd_portal(self, driver):
+        try:
+            # Locate the element that might be blocking the login button
+            cookie_banner_close_button = driver.find_element(
+                By.ID, "CybotCookiebotDialogBodyLevelButtonLevelOptinAllowallSelection"
+            )
+            # Click the close button or take other action to dismiss the cookie banner
+            cookie_banner_close_button.click()
+        except:
+            log("No cookie banner found")
+        time.sleep(1)  # Allow time for the page to load
+        # Simulate login
+        try:
+            # username_field = driver.find_element(By.XPATH, "//input[@placeholder='Uživatelské jméno / e-mail']")
+            username_field = driver.find_element(
+                By.XPATH, "//input[@placeholder='Zadejte svůj e-mail']"
+            )
+            # password_field = driver.find_element(By.XPATH, "//input[@placeholder='Heslo']")
+            password_field = driver.find_element(
+                By.XPATH, "//input[@placeholder='Zadejte své heslo']"
+            )
+            # login_button = driver.find_element(By.XPATH, "//button[@type='submit' and @color='primary']")
+            login_button = driver.find_element(
+                By.XPATH,
+                "//button[@type='submit' and contains(@class, 'mui-btn--primary')]",
+            )
+            # Enter login credentials and click the button
+            username_field.send_keys(self.username)
+            password_field.send_keys(self.password)
+            # Wait until the login button is clickable
+            wait = WebDriverWait(driver, 10)  # 10-second timeout
+            # login_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@type='submit' and @color='primary']")))
+            log("Login button found, clicking it")
+            login_button = wait.until(
+                EC.element_to_be_clickable(
+                    (
+                        By.XPATH,
+                        "//button[@type='submit' and contains(@class, 'mui-btn--primary')]",
+                    )
+                )
+            )
+            body = driver.find_element(By.TAG_NAME, "body")
+            body.screenshot(self.download_folder + "/00.png")
+            login_button.click()
+        except:
+            log(
+                f"{Colors.RED}ERROR: Failed to enter login details or find and click the login button{Colors.RESET}"
+            )
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                "ERROR: Nepodařilo se vyplnit přihlašovací údaje nebo najít a kliknout na tlačítko pro přihlášení",
+            )
+            raise Exception("Failed to find or click the login button")
+        # Allow time for login processing
+        time.sleep(5)  # Adjust as needed
+        log(f"Current URL: {driver.current_url}")
+        # Verify successful login
+        wait = WebDriverWait(driver, 20)  # 10-second timeout
+        body = driver.find_element(By.TAG_NAME, "body")
+        # Check if the specified H1 tag is present
+        h1_text = "Naměřená data"
+        try:
+            h1_element = wait.until(
+                EC.presence_of_element_located(
+                    (By.XPATH, f"//h1[contains(text(), '{h1_text}')]")
+                )
+            )
+        except:
+            alert_widget_content = driver.find_element(
+                By.CLASS_NAME, "alertWidget__content"
+            ).text
+            log(f"{Colors.RED}ERROR: {alert_widget_content}{Colors.RESET}")
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error", "ERROR: Není možné se přihlásit do aplikace"
+            )
+            raise Exception(f"Unable to login to the app")
+        body.screenshot(self.download_folder + "/01.png")
+        # Print whether the H1 tag with the specified text is found
+        if h1_element:
+            log(f"H1 tag with text '{h1_text}' is present.")
+        else:
+            log(
+                f" {Colors.RED}ERROR: H1 tag with text '{h1_text}' is not found.{Colors.RESET}"
+            )
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error",
+                f"ERROR: Text '{h1_text}' nebyl nalezen na stránce, zkuste skript spustit později znovu.",
+            )
+            raise Exception(f"Failed to find H1 tag with text '{h1_text}'")
+
+        # Check for Modal Dialog
+        try:
+            modal_dialog = driver.find_element(By.CLASS_NAME, "modal-dialog")
+            log(f"{Colors.YELLOW}Modal Dialog found{Colors.RESET}")
+            # Close the modal dialog
+            try:
+                body.screenshot(self.download_folder + "/01-modal.png")
+                log(f"{Colors.YELLOW}Closing Modal Dialog{Colors.RESET}")
+                close_button = modal_dialog.find_element(
+                    By.XPATH,
+                    ".//button[contains(@class, 'btn pnd-btn btn-primary') and contains(text(), 'Přečteno')]",
+                )
+                close_button.click()
+                log(
+                    f"{Colors.GREEN}Modal Dialog closed successfully, reloading page{Colors.RESET}"
+                )
+                time.sleep(2)  # Allow time for the modal to close
+                # Reload the page after clicking the button
+                driver.refresh()
+                log(f"{Colors.GREEN}Page reloaded successfully{Colors.RESET}")
+            except:
+                log(
+                    f"{Colors.RED}ERROR: Close button not found in the modal dialog.{Colors.RESET}"
+                )
+                raise Exception("Unable to click the close button in the modal dialog")
+        except:
+            log(
+                f"{Colors.GREEN}Modal dialog not found. Continuing without closing modal.{Colors.RESET}"
+            )
+        time.sleep(2)  # Allow time for the page to load
+
     def select_export_profile(self, driver, profile_type, link_text, image_id):
         wait = WebDriverWait(driver, 10)  # Adjust timeout as necessary
         body = driver.find_element(By.TAG_NAME, "body")
@@ -344,127 +468,7 @@ class pnd(hass.Hass):
         os.makedirs(self.download_folder, exist_ok=True)
         driver = self.load_chrome_driver()
         self.load_pnd_portal(driver)
-        try:
-            # Locate the element that might be blocking the login button
-            cookie_banner_close_button = driver.find_element(
-                By.ID, "CybotCookiebotDialogBodyLevelButtonLevelOptinAllowallSelection"
-            )
-            # Click the close button or take other action to dismiss the cookie banner
-            cookie_banner_close_button.click()
-        except:
-            log("No cookie banner found")
-        time.sleep(1)  # Allow time for the page to load
-        # Simulate login
-        try:
-            # username_field = driver.find_element(By.XPATH, "//input[@placeholder='Uživatelské jméno / e-mail']")
-            username_field = driver.find_element(
-                By.XPATH, "//input[@placeholder='Zadejte svůj e-mail']"
-            )
-            # password_field = driver.find_element(By.XPATH, "//input[@placeholder='Heslo']")
-            password_field = driver.find_element(
-                By.XPATH, "//input[@placeholder='Zadejte své heslo']"
-            )
-            # login_button = driver.find_element(By.XPATH, "//button[@type='submit' and @color='primary']")
-            login_button = driver.find_element(
-                By.XPATH,
-                "//button[@type='submit' and contains(@class, 'mui-btn--primary')]",
-            )
-            # Enter login credentials and click the button
-            username_field.send_keys(self.username)
-            password_field.send_keys(self.password)
-            # Wait until the login button is clickable
-            wait = WebDriverWait(driver, 10)  # 10-second timeout
-            # login_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@type='submit' and @color='primary']")))
-            log("Login button found, clicking it")
-            login_button = wait.until(
-                EC.element_to_be_clickable(
-                    (
-                        By.XPATH,
-                        "//button[@type='submit' and contains(@class, 'mui-btn--primary')]",
-                    )
-                )
-            )
-            body = driver.find_element(By.TAG_NAME, "body")
-            body.screenshot(self.download_folder + "/00.png")
-            login_button.click()
-        except:
-            log(
-                f"{Colors.RED}ERROR: Failed to enter login details or find and click the login button{Colors.RESET}"
-            )
-            self.set_state_pnd_running(False)
-            self.set_state_pnd_script_status(
-                "Error",
-                "ERROR: Nepodařilo se vyplnit přihlašovací údaje nebo najít a kliknout na tlačítko pro přihlášení",
-            )
-            raise Exception("Failed to find or click the login button")
-        # Allow time for login processing
-        time.sleep(5)  # Adjust as needed
-        log(f"Current URL: {driver.current_url}")
-        wait = WebDriverWait(driver, 20)  # 10-second timeout
-        body = driver.find_element(By.TAG_NAME, "body")
-        # Check if the specified H1 tag is present
-        h1_text = "Naměřená data"
-        try:
-            h1_element = wait.until(
-                EC.presence_of_element_located(
-                    (By.XPATH, f"//h1[contains(text(), '{h1_text}')]")
-                )
-            )
-        except:
-            alert_widget_content = driver.find_element(
-                By.CLASS_NAME, "alertWidget__content"
-            ).text
-            log(f"{Colors.RED}ERROR: {alert_widget_content}{Colors.RESET}")
-            self.set_state_pnd_running(False)
-            self.set_state_pnd_script_status(
-                "Error", "ERROR: Není možné se přihlásit do aplikace"
-            )
-            raise Exception(f"Unable to login to the app")
-        body.screenshot(self.download_folder + "/01.png")
-        # Print whether the H1 tag with the specified text is found
-        if h1_element:
-            log(f"H1 tag with text '{h1_text}' is present.")
-        else:
-            log(
-                f" {Colors.RED}ERROR: H1 tag with text '{h1_text}' is not found.{Colors.RESET}"
-            )
-            self.set_state_pnd_running(False)
-            self.set_state_pnd_script_status(
-                "Error",
-                f"ERROR: Text '{h1_text}' nebyl nalezen na stránce, zkuste skript spustit později znovu.",
-            )
-            raise Exception(f"Failed to find H1 tag with text '{h1_text}'")
-
-        # Check for Modal Dialog
-        try:
-            modal_dialog = driver.find_element(By.CLASS_NAME, "modal-dialog")
-            log(f"{Colors.YELLOW}Modal Dialog found{Colors.RESET}")
-            # Close the modal dialog
-            try:
-                body.screenshot(self.download_folder + "/01-modal.png")
-                log(f"{Colors.YELLOW}Closing Modal Dialog{Colors.RESET}")
-                close_button = modal_dialog.find_element(
-                    By.XPATH,
-                    ".//button[contains(@class, 'btn pnd-btn btn-primary') and contains(text(), 'Přečteno')]",
-                )
-                close_button.click()
-                log(
-                    f"{Colors.GREEN}Modal Dialog closed successfully, reloading page{Colors.RESET}"
-                )
-                time.sleep(2)  # Allow time for the modal to close
-                # Reload the page after clicking the button
-                driver.refresh()
-                log(f"{Colors.GREEN}Page reloaded successfully{Colors.RESET}")
-            except:
-                log(
-                    f"{Colors.RED}ERROR: Close button not found in the modal dialog.{Colors.RESET}"
-                )
-                raise Exception("Unable to click the close button in the modal dialog")
-        except:
-            log(
-                f"{Colors.GREEN}Modal dialog not found. Continuing without closing modal.{Colors.RESET}"
-            )
-        time.sleep(2)  # Allow time for the page to load
+        self.login_to_pnd_portal(driver)
         # Get the app version
         version_element = driver.find_element(
             By.XPATH, "//div[contains(text(), 'Verze aplikace:')]"
