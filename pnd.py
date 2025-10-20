@@ -231,6 +231,23 @@ class pnd(hass.Hass):
         driver.set_window_size(1920, 1080)
         return driver
 
+    def load_pnd_portal(self, driver):
+        try:
+            # driver.get("https://dip.cezdistribuce.cz/irj/portal/?zpnd=")  # Change to the website's login page
+            PNDURL = "https://pnd.cezdistribuce.cz/cezpnd2/external/dashboard/view"
+            log(f"Opening Website: {PNDURL}")
+            driver.get(PNDURL)  # Change to the website's login page
+            log("Website Opened")
+        except:
+            log(f"{Colors.RED}ERROR: Unable to open website - exitting{Colors.RESET}")
+            self.set_state_pnd_running(False)
+            self.set_state_pnd_script_status(
+                "Error", "ERROR: Nepodařilo se otevřít webovou stránku PND portálu"
+            )
+            raise Exception("Unable to open website - exitting")
+        time.sleep(3)  # Allow time for the page to load
+        log(f"Current URL: {driver.current_url}")
+
     def select_export_profile(self, driver, profile_type, link_text, image_id):
         wait = WebDriverWait(driver, 10)  # Adjust timeout as necessary
         body = driver.find_element(By.TAG_NAME, "body")
@@ -326,21 +343,7 @@ class pnd(hass.Hass):
         delete_folder_contents(self.download_folder + "/")
         os.makedirs(self.download_folder, exist_ok=True)
         driver = self.load_chrome_driver()
-        try:
-            # driver.get("https://dip.cezdistribuce.cz/irj/portal/?zpnd=")  # Change to the website's login page
-            PNDURL = "https://pnd.cezdistribuce.cz/cezpnd2/external/dashboard/view"
-            log(f"Opening Website: {PNDURL}")
-            driver.get(PNDURL)  # Change to the website's login page
-            log("Website Opened")
-        except:
-            log(f"{Colors.RED}ERROR: Unable to open website - exitting{Colors.RESET}")
-            self.set_state_pnd_running(False)
-            self.set_state_pnd_script_status(
-                "Error", "ERROR: Nepodařilo se otevřít webovou stránku PND portálu"
-            )
-            raise Exception("Unable to open website - exitting")
-        time.sleep(3)  # Allow time for the page to load
-        log(f"Current URL: {driver.current_url}")
+        self.load_pnd_portal(driver)
         try:
             # Locate the element that might be blocking the login button
             cookie_banner_close_button = driver.find_element(
