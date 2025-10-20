@@ -710,166 +710,23 @@ class pnd(hass.Hass):
         time.sleep(2)
         body.click()
 
-        # Wait for the page and elements to fully load
-        wait = WebDriverWait(driver, 10)  # Adjust timeout as necessary
-        body.screenshot(self.download_folder + "/07.png")
-        # Find and click the link by its exact text
-        try:
-            link_text = "07 Profil spotřeby za den (+A)"
-            link = WebDriverWait(first_pnd_window, 10).until(
-                EC.element_to_be_clickable(
-                    (By.XPATH, ".//a[contains(text(), '" + link_text + "')]")
-                )
-            )
-            log(link.text)
-
-            # Navigate to the parent element using XPath
-            parent_element = driver.execute_script(
-                "return arguments[0].parentNode;", link
-            )
-            # Get the HTML of the parent element
-            parent_html = parent_element.get_attribute("outerHTML")
-            time.sleep(2)
-            body.screenshot(self.download_folder + "/daily-body-07a.png")
-            link.click()
-            body.screenshot(self.download_folder + "/daily-body-07b.png")
-            body.click()
-            body.screenshot(self.download_folder + "/daily-body-07c.png")
-        except:
-            log(f"{Colors.RED}ERROR: Failed to find link {link_text}{Colors.RESET}")
-            self.set_state_pnd_running(False)
-            self.set_state_pnd_script_status(
-                "Error",
-                f"ERROR: Nepodařilo se najít odkaz pro denní export {link_text}"
-            )
-        # Wait for the dropdown toggle and click it using the button text
-        try:
-            wait = WebDriverWait(driver, 10)
-            toggle_button = wait.until(
-                EC.element_to_be_clickable(
-                    (By.XPATH, "//button[contains(text(), 'Exportovat data')]")
-                )
-            )
-            time.sleep(2)
-            toggle_button.click()
-
-            # Wait for the CSV link and click it
-            csv_link = wait.until(
-                EC.element_to_be_clickable((By.XPATH, "//a[normalize-space()='CSV']"))
-            )
-            log(f"Downloading CSV file for {link_text}")
-            csv_link.click()
-        except:
-            log(
-                f"{Colors.RED}ERROR: Failed to download CSV file for {link_text}{Colors.RESET}"
-            )
-            self.set_state_pnd_running(False)
-            self.set_state_pnd_script_status(
-                "Error",
-                f"ERROR: Nepodařilo se stáhnout CSV soubor pro denní export {link_text}",
-            )
-        # Wait for the download to complete
-        time.sleep(5)
-        try:
-            del downloaded_file
-        except:
-            pass
-        # downloaded_file = wait_for_download(self.download_folder)
-        downloaded_file = os.path.join(self.download_folder, "pnd_export.csv")
-        # Rename the file if it was downloaded
-        if downloaded_file:
-            new_filename = os.path.join(self.download_folder, "daily-consumption.csv")
-            os.remove(new_filename) if os.path.exists(new_filename) else None
-            os.rename(downloaded_file, new_filename)
-            log(
-                f"{Colors.GREEN}File downloaded and saved as: {new_filename}{Colors.RESET}"
-            )
-        else:
-            log(
-                f"{Colors.RED} ERROR: No file was downloaded for {link_text}{Colors.RESET}"
-            )
-
-        wait = WebDriverWait(driver, 10)  # Adjust timeout as necessary
-
-        # Find and click the link by its exact text
-        body.screenshot(self.download_folder + "/08.png")
-        try:
-            link_text = "08 Profil výroby za den (-A)"
-            link = WebDriverWait(first_pnd_window, 10).until(
-                EC.element_to_be_clickable(
-                    (By.XPATH, ".//a[contains(text(), '" + link_text + "')]")
-                )
-            )
-            log(link.text)
-
-            # Navigate to the parent element using XPath
-            parent_element = driver.execute_script(
-                "return arguments[0].parentNode;", link
-            )
-            # Get the HTML of the parent element
-            parent_html = parent_element.get_attribute("outerHTML")
-            time.sleep(2)
-            body.screenshot(self.download_folder + "/daily-body-08a.png")
-            link.click()
-            body.screenshot(self.download_folder + "/daily-body-08b.png")
-            body.click()
-            body.screenshot(self.download_folder + "/daily-body-08c.png")
-        except:
-            log(f"{Colors.RED}ERROR: Failed to find link {link_text}{Colors.RESET}")
-            self.set_state_pnd_running(False)
-            self.set_state_pnd_script_status(
-                "Error",
-                f"ERROR: Nepodařilo se najít odkaz pro denní export {link_text}",
-            )
-        # Wait for the dropdown toggle and click it using the button text
-        wait = WebDriverWait(driver, 10)
-        try:
-            toggle_button = wait.until(
-                EC.element_to_be_clickable(
-                    (By.XPATH, "//button[contains(text(), 'Exportovat data')]")
-                )
-            )
-            time.sleep(2)
-            toggle_button.click()
-
-            # Wait for the CSV link and click it
-            csv_link = wait.until(
-                EC.element_to_be_clickable((By.XPATH, "//a[normalize-space()='CSV']"))
-            )
-            log(f"Downloading CSV file for {link_text}")
-            csv_link.click()
-
-        except:
-            log(
-                f"{Colors.RED}ERROR: Failed to download CSV file for {link_text}{Colors.RESET}"
-            )
-            self.set_state_pnd_running(False)
-            self.set_state_pnd_script_status(
-                "Error",
-                f"ERROR: Nepodařilo se stáhnout CSV soubor pro denní export {link_text}",
-            )
-        # Wait for the download to complete
-        time.sleep(5)
-        try:
-            del downloaded_file
-        except:
-            pass
-        # downloaded_file = wait_for_download(self.download_folder)
-        # Rename the file if it was downloaded
-        downloaded_file = os.path.join(self.download_folder, "pnd_export.csv")
-        if downloaded_file:
-            new_filename = os.path.join(self.download_folder, "daily-production.csv")
-            os.remove(new_filename) if os.path.exists(new_filename) else None
-            os.rename(downloaded_file, new_filename)
-            log(
-                f"{Colors.GREEN}File downloaded and saved as: {new_filename}{Colors.RESET}"
-            )
-        else:
-            log(
-                f"{Colors.RED} ERROR: No file was downloaded for {link_text}{Colors.RESET}"
-            )
-
+        # ------------------DOWNLOAD DAILY DATA-----------------------------
+        profile_type = "daily"
+        # daily consumption
+        link_text = "07 Profil spotřeby za den (+A)"
+        image_id = "07"
+        self.select_export_profile(driver, profile_type, link_text, image_id)
+        self.download_export_file(driver, profile_type, link_text)
+        self.rename_downloaded_file("daily-consumption.csv", link_text)
+        # daily production
+        link_text = "08 Profil výroby za den (-A)"
+        image_id = "08"
+        self.select_export_profile(driver, profile_type, link_text, image_id)
+        self.download_export_file(driver, profile_type, link_text)
+        self.rename_downloaded_file("daily-production.csv", link_text)
         log("All Done - DAILY DATA DOWNLOADED")
+
+        # ------------------PROCESS DAILY DATA-----------------------------
         data_consumption = pd.read_csv(
             self.download_folder + "/daily-consumption.csv",
             delimiter=";",
@@ -1012,177 +869,24 @@ class pnd(hass.Hass):
             )
             raise Exception("Failed to click 'Tabulka dat' button")
 
-        # Wait for the page and elements to fully load
-        wait = WebDriverWait(driver, 10)  # Adjust timeout as necessary
-
-        # Find and click the link by its exact text
-        try:
-            log("Selecting 07 Profil spotřeby za den (+A)")
-            link_text = "07 Profil spotřeby za den (+A)"
-            link = WebDriverWait(first_pnd_window, 10).until(
-                EC.element_to_be_clickable(
-                    (By.XPATH, ".//a[contains(text(), '" + link_text + "')]")
-                )
-            )
-            log(link.text)
-
-            # Navigate to the parent element using XPath
-            parent_element = driver.execute_script(
-                "return arguments[0].parentNode;", link
-            )
-            # Get the HTML of the parent element
-            parent_html = parent_element.get_attribute("outerHTML")
-            # Use ActionChains to move to the element
-            actions = ActionChains(driver)
-            actions.move_to_element(link).perform()
-            time.sleep(1)
-            body.screenshot(self.download_folder + "/interval-body-07a.png")
-            link.click()
-            body.screenshot(self.download_folder + "/interval-body-07b.png")
-            time.sleep(1)
-            body.click()
-        except:
-            log(f"{Colors.RED}ERROR: Failed to find link {link_text}{Colors.RESET}")
-            self.set_state_pnd_running(False)
-            self.set_state_pnd_script_status(
-                "Error",
-                f"ERROR: Nepodařilo se najít odkaz pro interval export {link_text}",
-            )
-
-        body.screenshot(self.download_folder + "/interval-body-07c.png")
-
-        # Wait for the dropdown toggle and click it using the button text
-        log("Exporting data")
-        wait = WebDriverWait(driver, 10)
-        try:
-            toggle_button = wait.until(
-                EC.element_to_be_clickable(
-                    (By.XPATH, "//button[contains(text(), 'Exportovat data')]")
-                )
-            )
-            time.sleep(1)
-            toggle_button.click()
-
-            # Wait for the CSV link and click it
-            csv_link = wait.until(
-                EC.element_to_be_clickable((By.XPATH, "//a[normalize-space()='CSV']"))
-            )
-            csv_link.click()
-        except:
-            log(
-                f"{Colors.RED}ERROR: Failed to download CSV file for {link_text}{Colors.RESET}"
-            )
-            self.set_state_pnd_running(False)
-            self.set_state_pnd_script_status(
-                "Error",
-                f"ERROR: Nepodařilo se stáhnout CSV soubor pro interval export {link_text}",
-            )
-        # Wait for the download to complete
-        time.sleep(5)
-        try:
-            del downloaded_file
-        except:
-            pass
-        # downloaded_file = wait_for_download(self.download_folder)
-        downloaded_file = os.path.join(self.download_folder, "pnd_export.csv")
-        # Rename the file if it was downloaded
-        if downloaded_file:
-            new_filename = os.path.join(self.download_folder, "range-consumption.csv")
-            os.remove(new_filename) if os.path.exists(new_filename) else None
-            os.rename(downloaded_file, new_filename)
-            downloaded_file = self.download_folder + "/range-consumption.csv"
-            log(
-                f"{Colors.GREEN}File downloaded and saved as: {new_filename} {round(os.path.getsize(downloaded_file)/1024,2)} KB{Colors.RESET}"
-            )
-        else:
-            log(f"{Colors.RED}ERROR: No file was downloaded.{Colors.RESET}")
+        # ------------------DOWNLOAD INTERVAL DATA-----------------------------
+        profile_type = "interval"
+        # interval consumption
+        link_text = "07 Profil spotřeby za den (+A)"
+        image_id = "07"
         # ----------------------------------------------
-        # Wait for the page and elements to fully load
-        wait = WebDriverWait(driver, 10)  # Adjust timeout as necessary
-
-        # Find and click the link by its exact text
-        log("Selecting 08 Profil výroby za den (-A)")
+        self.select_export_profile(driver, profile_type, link_text, image_id)
+        self.download_export_file(driver, profile_type, link_text)
+        self.rename_downloaded_file("range-consumption.csv", link_text)
+        # interval production
         link_text = "08 Profil výroby za den (-A)"
-        try:
-            link = WebDriverWait(first_pnd_window, 10).until(
-                EC.element_to_be_clickable(
-                    (By.XPATH, ".//a[contains(text(), '" + link_text + "')]")
-                )
-            )
-            log(link.text)
-
-            # Navigate to the parent element using XPath
-            parent_element = driver.execute_script(
-                "return arguments[0].parentNode;", link
-            )
-            # Get the HTML of the parent element
-            parent_html = parent_element.get_attribute("outerHTML")
-            # Use ActionChains to move to the element
-            actions = ActionChains(driver)
-            actions.move_to_element(link).perform()
-
-            body.screenshot(self.download_folder + "/interval-body-08a.png")
-            time.sleep(1)
-            link.click()
-            body.screenshot(self.download_folder + "/interval-body-08b.png")
-            time.sleep(1)
-            body.click()
-            body.screenshot(self.download_folder + "/interval-body-08c.png")
-        except:
-            log(f"{Colors.RED}ERROR: Failed to find link {link_text}{Colors.RESET}")
-            self.set_state_pnd_running(False)
-            self.set_state_pnd_script_status(
-                "Error",
-                f"ERROR: Nepodařilo se najít odkaz pro interval export {link_text}",
-            )
-        # Wait for the dropdown toggle and click it using the button text
-        log("Exporting data")
-        wait = WebDriverWait(driver, 10)
-        try:
-            toggle_button = wait.until(
-                EC.element_to_be_clickable(
-                    (By.XPATH, "//button[contains(text(), 'Exportovat data')]")
-                )
-            )
-            # driver.execute_script("arguments[0].scrollIntoView();", toggle_button)
-
-            toggle_button.click()
-
-            # Wait for the CSV link and click it
-            csv_link = wait.until(
-                EC.element_to_be_clickable((By.XPATH, "//a[normalize-space()='CSV']"))
-            )
-            csv_link.click()
-        except:
-            log(
-                f"{Colors.RED}ERROR: Failed to download CSV file for {link_text}{Colors.RESET}"
-            )
-            self.set_state_pnd_running(False)
-            self.set_state_pnd_script_status(
-                "Error",
-                f"ERROR: Nepodařilo se stáhnout CSV soubor pro interval export {link_text}",
-            )
-        # Wait for the download to complete
-        time.sleep(5)
-        try:
-            del downloaded_file
-        except:
-            pass
-        # downloaded_file = wait_for_download(self.download_folder)
-        downloaded_file = os.path.join(self.download_folder, "pnd_export.csv")
-
-        # Rename the file if it was downloaded
-        if downloaded_file:
-            new_filename = os.path.join(self.download_folder, "range-production.csv")
-            os.remove(new_filename) if os.path.exists(new_filename) else None
-            os.rename(downloaded_file, new_filename)
-            downloaded_file = self.download_folder + "/range-production.csv"
-            log(
-                f"{Colors.GREEN}File downloaded and saved as: {new_filename} {round(os.path.getsize(downloaded_file)/1024,2)} KB{Colors.RESET}"
-            )
-        else:
-            log(f"{Colors.RED}No file was downloaded.{Colors.RESET}")
+        image_id = "08"
+        self.select_export_profile(driver, profile_type, link_text, image_id)
+        self.download_export_file(driver, profile_type, link_text)
+        self.rename_downloaded_file("range-production.csv", link_text)
         log("All Done - INTERVAL DATA DOWNLOADED")
+
+        # ------------------PROCESS INTERVAL DATA-----------------------------
         data_consumption = pd.read_csv(
             self.download_folder + "/range-consumption.csv",
             delimiter=";",
