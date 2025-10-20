@@ -99,7 +99,7 @@ def delete_folder_contents(folder_path):
                     file_path
                 )  # Removes directories and their contents recursively.
         except Exception as e:
-            print(f"Failed to delete {file_path}. Reason: {e}")
+            log(f"Failed to delete {file_path}. Reason: {e}")
 
 
 class Colors:
