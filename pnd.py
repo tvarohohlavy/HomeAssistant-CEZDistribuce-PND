@@ -158,7 +158,7 @@ class pnd(hass.Hass):
 
   def run_pnd(self, event_name, data, kwargs):
     script_start_time = dt.now()
-    log(f"{Colors.CYAN}********************* Starting " +  ver + f" *********************{Colors.RESET}")
+    log(f"{Colors.CYAN}********************* Starting {ver} *********************{Colors.RESET}")
     self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="on")
     self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Running",attributes={
       "status": "OK",
@@ -199,7 +199,7 @@ class pnd(hass.Hass):
     try:
       #driver.get("https://dip.cezdistribuce.cz/irj/portal/?zpnd=")  # Change to the website's login page
       PNDURL = "https://pnd.cezdistribuce.cz/cezpnd2/external/dashboard/view"
-      log("Opening Website:", PNDURL)
+      log(f"Opening Website: {PNDURL}")
       driver.get(PNDURL)  # Change to the website's login page
       log("Website Opened")
     except:
@@ -211,7 +211,7 @@ class pnd(hass.Hass):
       })
       raise Exception("Unable to open website - exitting")
     time.sleep(3)  # Allow time for the page to load
-    log("Current URL:", driver.current_url)
+    log(f"Current URL: {driver.current_url}")
     try:
         # Locate the element that might be blocking the login button
         cookie_banner_close_button = driver.find_element(By.ID, "CybotCookiebotDialogBodyLevelButtonLevelOptinAllowallSelection")
@@ -255,7 +255,7 @@ class pnd(hass.Hass):
         raise Exception("Failed to find or click the login button")
     # Allow time for login processing
     time.sleep(5)  # Adjust as needed
-    log("Current URL:", driver.current_url)
+    log(f"Current URL: {driver.current_url}")
     wait = WebDriverWait(driver, 20)  # 10-second timeout
     body = driver.find_element(By.TAG_NAME, 'body')
     # Check if the specified H1 tag is present
@@ -456,7 +456,7 @@ class pnd(hass.Hass):
         button.click()
         log(f"{Colors.GREEN}Button 'Vyhledat data' clicked successfully!{Colors.RESET}")
     except Exception as e:
-        log(f"{Colors.RED}Failed to find or click the 'Vyhledat data' button:{Colors.RESET}", str(e))
+        log(f"{Colors.RED}Failed to find or click the 'Vyhledat data' button:{Colors.RESET} {str(e)}")
         self.set_state(f"binary_sensor.pnd_running{self.suffix}", state="off")
         self.set_state(f"sensor.pnd_script_status{self.suffix}", state="Error", attributes={
             "status": "ERROR: Nepodařilo se nalézt nebo kliknout na tlačítko 'Vyhledat data'",
@@ -891,4 +891,4 @@ class pnd(hass.Hass):
       "status": "Finished",
     })
     log(f"{Colors.CYAN}********************* Duration: {script_duration} *********************{Colors.RESET}")
-    log(f"{Colors.CYAN}********************* Finished " +  ver + f" *********************{Colors.RESET}")
+    log(f"{Colors.CYAN}********************* Finished {ver} *********************{Colors.RESET}")
