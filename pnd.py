@@ -372,6 +372,26 @@ class pnd(hass.Hass):
             )
         time.sleep(2)  # Allow time for the page to load
 
+    def get_pnd_portal_version(self, driver):
+        # Get the app version
+        version_element = driver.find_element(
+            By.XPATH, "//div[contains(text(), 'Verze aplikace:')]"
+        )
+        version_text = (
+            version_element.get_attribute("textContent") or version_element.text or ""
+        ).replace("\xa0", " ")
+        parts = version_text.split(":", 1)
+        version_number = parts[1].strip() if len(parts) > 1 else version_text.strip()
+        version_number = str(version_number).strip() or "unknown"
+        self.set_state_safe(
+            f"sensor.pnd_app_version{self.suffix}",
+            state=version_number,
+            attributes={
+                "friendly_name": "PND App Version",
+            },
+        )
+        log(f"App Version: {version_number}")
+
     def select_export_profile(self, driver, profile_type, link_text, image_id):
         wait = WebDriverWait(driver, 10)  # Adjust timeout as necessary
         body = driver.find_element(By.TAG_NAME, "body")
@@ -469,24 +489,7 @@ class pnd(hass.Hass):
         driver = self.load_chrome_driver()
         self.load_pnd_portal(driver)
         self.login_to_pnd_portal(driver)
-        # Get the app version
-        version_element = driver.find_element(
-            By.XPATH, "//div[contains(text(), 'Verze aplikace:')]"
-        )
-        version_text = (
-            version_element.get_attribute("textContent") or version_element.text or ""
-        ).replace("\xa0", " ")
-        parts = version_text.split(":", 1)
-        version_number = parts[1].strip() if len(parts) > 1 else version_text.strip()
-        version_number = str(version_number).strip() or "unknown"
-        self.set_state_safe(
-            f"sensor.pnd_app_version{self.suffix}",
-            state=version_number,
-            attributes={
-                "friendly_name": "PND App Version",
-            },
-        )
-        log(f"App Version: {version_number}")
+        self.get_pnd_portal_version(driver)
 
         first_pnd_window = wait.until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, ".pnd-window"))
