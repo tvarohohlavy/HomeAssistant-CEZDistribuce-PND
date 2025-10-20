@@ -2,6 +2,7 @@ ver = "0.9.9.7"
 import appdaemon.plugins.hass.hassapi as hass
 import time
 import os
+import math
 import shutil
 import pandas as pd
 import zipfile
