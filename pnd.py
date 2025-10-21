@@ -15,7 +15,6 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.common.action_chains import ActionChains
 from bs4 import BeautifulSoup
 import platform
 import subprocess
@@ -173,8 +172,6 @@ class pnd(hass.Hass):
         self.ELM = self.args["ELM"]
         self.id = self.args.get("id", "")
         self.suffix = f"_{self.id}" if self.id else ""
-        self.entity_id_consumption = f"sensor.pnd_consumption{self.suffix}"
-        self.entity_id_production = f"sensor.pnd_production{self.suffix}"
         self.listen_event(self.run_pnd, "run_pnd")
 
     def terminate(self):
@@ -748,61 +745,27 @@ class pnd(hass.Hass):
         log("All Done - DAILY DATA DOWNLOADED")
 
         # ------------------PROCESS DAILY DATA-----------------------------
-        data_consumption = pd.read_csv(
-            self.download_folder + "/daily-consumption.csv",
-            delimiter=";",
-            encoding="latin1",
-        )
-        latest_consumption_entry = data_consumption.iloc[
-            -1
-        ]  # Get the last row, assuming the data is appended daily
-        data_production = pd.read_csv(
-            self.download_folder + "/daily-production.csv",
-            delimiter=";",
-            encoding="latin1",
-        )
-        latest_production_entry = data_production.iloc[
-            -1
-        ]  # Get the last row, assuming the data is appended daily
-
-        # Extract date and consumption values
-        date_consumption_str = latest_consumption_entry.iloc[0]
-        date_consumption_obj = conv_date(date_consumption_str)
-        yesterday_consumption = date_consumption_obj - timedelta(days=1)
-        date_production_str = latest_production_entry.iloc[0]
-        date_production_obj = conv_date(date_production_str)
-        yesterday_production = date_production_obj - timedelta(days=1)
-
-        consumption_value = latest_consumption_entry.iloc[1]
-        production_value = latest_production_entry.iloc[1]
-
-        log(
-            f"{Colors.GREEN}Latest entry: {date_consumption_str} - {consumption_value} kWh{Colors.RESET}"
-        )
-        log(
-            f"{Colors.GREEN}Latest entry: {date_production_str} - {production_value} kWh{Colors.RESET}"
-        )
-
-        self.set_state(
-            self.entity_id_consumption,
-            state=consumption_value,
-            attributes={
-                "friendly_name": "PND Consumption",
-                "device_class": "energy",
-                "unit_of_measurement": "kWh",
-                "date": yesterday_consumption.isoformat(),
-            },
-        )
-        self.set_state(
-            self.entity_id_production,
-            state=production_value,
-            attributes={
-                "friendly_name": "PND Production",
-                "device_class": "energy",
-                "unit_of_measurement": "kWh",
-                "date": yesterday_production.isoformat(),
-            },
-        )
+        for data_name in ["consumption", "production"]:
+            data_pd = pd.read_csv(
+                self.download_folder + f"/daily-{data_name}.csv",
+                delimiter=";",
+                encoding="latin1",
+            )
+            last_row = data_pd.iloc[-1]
+            entry_date, entry_value = last_row.iloc[0], last_row.iloc[1]
+            log(
+                f"{Colors.GREEN}Latest {data_name} entry: {entry_date} - {entry_value} kWh{Colors.RESET}"
+            )
+            self.set_state(
+                f"sensor.pnd_{data_name}{self.suffix}",
+                state=entry_value,
+                attributes={
+                    "friendly_name": f"PND {data_name.capitalize()}",
+                    "device_class": "energy",
+                    "unit_of_measurement": "kWh",
+                    "date": (conv_date(entry_date) - timedelta(days=1)).isoformat(),
+                },
+            )
 
         log("All Done - DAILY DATA PROCESSED")
 
